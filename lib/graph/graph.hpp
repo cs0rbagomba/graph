@@ -29,12 +29,15 @@ public:
   typedef const V& const_reference;
   typedef std::ptrdiff_t difference_type;
 
+  typedef E weight_type;
+  typedef const E& const_weight_reference;
+
   class Edge {
 
   public:
 
     Edge() : m_source(0), m_destination(0), m_weight() {}
-    Edge(const_pointer source, const_pointer destination, const E& weight);
+    Edge(const_pointer source, const_pointer destination, const_weight_reference weight);
     Edge(const Edge& o);
     Edge& operator=(Edge o) { swap(o); return *this; }
     void swap(Edge& o);
@@ -70,8 +73,8 @@ public:
   // Modifiers
   bool addVertex(const_reference data);
   bool removeVertex(const_reference data);
-  bool addEdge(const_reference source, const_reference destination, const E& weight = E());
-  bool removeEdge(const_reference source, const_reference destination, const E& weight = E());
+  bool addEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
+  bool removeEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
   bool removeAllEdges(const_reference source, const_reference destination);
 
   // Lookup
@@ -174,7 +177,7 @@ private:
 
   struct EdgeTo {
 
-    EdgeTo(const_pointer destination, const E& weight = E());
+    EdgeTo(const_pointer destination, const_weight_reference weight = weight_type());
     EdgeTo(const EdgeTo& o) : m_destination(o.m_destination), m_weight(o.m_weight) {}
     EdgeTo& operator=(EdgeTo o) { swap(o); return *this; }
     void swap(EdgeTo& o);
@@ -194,8 +197,8 @@ private:
 
     bool operator==(const Vertex& other) const;
 
-    void addEdge(const_pointer destination, const E& weight = E());
-    void removeEdge(const_reference destination, const E& weight = E());
+    void addEdge(const_pointer destination, const_weight_reference weight = weight_type());
+    void removeEdge(const_reference destination, const_weight_reference weight = weight_type());
     void removeAllEdgesTo(const_reference destination);
     std::vector<Edge> edges() const;
 
@@ -214,7 +217,7 @@ private:
 // Edge
 
 template <typename V, typename E>
-inline Graph<V, E>::Edge::Edge(const_pointer source, const_pointer destination, const E& weight)
+inline Graph<V, E>::Edge::Edge(const_pointer source, const_pointer destination, const_weight_reference weight)
   : m_source(source)
   , m_destination(destination)
   , m_weight(weight)
@@ -316,7 +319,7 @@ void Graph<V, E>::edge_iterator::advance(int n)
 
 // EdgeTo
 template <typename V, typename E>
-inline Graph<V, E>::EdgeTo::EdgeTo(const_pointer destination, const E& weight)
+inline Graph<V, E>::EdgeTo::EdgeTo(const_pointer destination, const_weight_reference weight)
   : m_destination(const_cast<pointer>(destination))
   , m_weight(weight)
 {}
@@ -347,13 +350,13 @@ inline bool Graph<V, E>::Vertex::operator==(const Vertex& other) const
 }
 
 template <typename V, typename E>
-inline void Graph<V, E>::Vertex::addEdge(const_pointer destination, const E& weight)
+inline void Graph<V, E>::Vertex::addEdge(const_pointer destination, const_weight_reference weight)
 {
   m_edges.push_back(EdgeTo(destination, weight));
 }
 
 template <typename V, typename E>
-inline void Graph<V, E>::Vertex::removeEdge(const_reference destination, const E& weight)
+inline void Graph<V, E>::Vertex::removeEdge(const_reference destination, const_weight_reference weight)
 {
   m_edges.erase(std::find_if(m_edges.begin(), m_edges.end(),
                              [&destination, &weight](const EdgeTo& e)
@@ -429,7 +432,7 @@ inline bool Graph<V, E>::removeVertex(const_reference data)
 }
 
 template <typename V, typename E>
-bool Graph<V, E>::addEdge(const_reference source, const_reference destination, const E& weight)
+bool Graph<V, E>::addEdge(const_reference source, const_reference destination, const_weight_reference weight)
 {
   typename std::vector<Vertex>::iterator source_it = find(source);
   if (source_it == m_vertices.end())
@@ -447,7 +450,7 @@ bool Graph<V, E>::addEdge(const_reference source, const_reference destination, c
 }
 
 template <typename V, typename E>
-inline bool Graph<V, E>::removeEdge(const_reference source, const_reference destination, const E& weight)
+inline bool Graph<V, E>::removeEdge(const_reference source, const_reference destination, const_weight_reference weight)
 {
   typename std::vector<Vertex>::iterator source_it = find(source);
   if (source_it == m_vertices.end())

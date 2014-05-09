@@ -6,13 +6,13 @@
 #include <set>
 
 #include <algorithm>
+#include <numeric> // accumulate
 #include <iterator>
 #include <memory>
 
 
 template <typename V,
-          typename E = int,
-          typename Alloc = std::allocator<V> >
+          typename E = int>
 class Graph {
 
 private:
@@ -34,19 +34,19 @@ public:
   public:
 
     Edge() : m_source(0), m_destination(0), m_weight() {}
-    Edge(pointer source, pointer destination, E weight);
+    Edge(const_pointer source, const_pointer destination, const E& weight);
     Edge(const Edge& o);
     Edge& operator=(Edge o) { swap(o); return *this; }
     void swap(Edge& o);
 
-    reference getSource() const { return *m_source; }
-    reference getDestination() const { return *m_destination; }
+    const_reference getSource() const { return *m_source; }
+    const_reference getDestination() const { return *m_destination; }
     E getWeight() const { return m_weight; }
 
   private:
 
-    pointer m_source;
-    pointer m_destination;
+    const_pointer m_source;
+    const_pointer m_destination;
     E m_weight;
   };
 
@@ -54,10 +54,10 @@ public:
   typedef Edge& edge_reference;
 
 
-  Graph(bool isdirected = true) : m_directed(isdirected), m_vertices(), m_allocator(Alloc()) {}
-  Graph(const Graph<V, E, Alloc>& o) : m_directed(o.m_directed), m_vertices(o.m_vertices), m_allocator(o.m_allocator) {}
-  Graph<V, E, Alloc>& operator=(Graph<V, E, Alloc> o) { swap(o); return *this; }
-  void swap(Graph& o) { std::swap (m_directed, o.m_directed); std::swap(m_vertices, o.m_vertices); std::swap(m_allocator, o.m_allocator);}
+  Graph(bool isdirected = true) : m_directed(isdirected), m_vertices() {}
+  Graph(const Graph<V, E>& o) : m_directed(o.m_directed), m_vertices(o.m_vertices) {}
+  Graph<V, E>& operator=(Graph<V, E> o) { swap(o); return *this; }
+  void swap(Graph& o) { std::swap (m_directed, o.m_directed); std::swap(m_vertices, o.m_vertices); }
 
   // Properties
   bool directed() const { return m_directed; }
@@ -77,12 +77,14 @@ public:
 
   // Lookup
   bool contains(const_reference data) const { return find(data) != m_vertices.end(); }
-  std::vector<const_pointer> vertices() const;
-  std::vector<const_pointer> neighboursOf(const_reference data) const;
+  std::vector<value_type> vertices() const;
+  std::vector<value_type> neighboursOf(const_reference data) const;
   std::vector<E> weightsBetween(const_reference source, const_reference destination) const;
   std::vector<Edge> edges() const;
 
   // iterators
+
+  /// @todo make it random access
   class vertex_iterator : public std::iterator<std::forward_iterator_tag,
                                                value_type,
                                                difference_type,
@@ -102,8 +104,8 @@ public:
     reference_self_type operator=(self_type o) { swap(o); return *this; }
     void swap(reference_self_type o) { std::swap(m_it, o.m_it); }
 
-    reference operator*() { return *((*m_it).m_data); }
-    pointer operator->() { return (*m_it).m_data; }
+    reference operator*() { return (*m_it).m_data; }
+    pointer operator->() { return &(*m_it).m_data; }
     self_type &operator++() { ++m_it; return *this; }
     self_type operator++(int) { self_type tmp(*this); ++(*this); return tmp; }
     self_type operator+(difference_type n) { self_type tmp(*this); tmp.pos_ += n; return tmp; }
@@ -115,7 +117,8 @@ public:
     vertex_iterator(typename std::vector<Vertex>::iterator it) : m_it(it) {}
     vertex_iterator(typename std::vector<Vertex>::const_iterator it) : m_it(it) {}
 
-    typename std::vector<Vertex>::const_iterator m_it;
+//     typename std::vector<Vertex>::const_iterator m_it;
+    typename std::vector<Vertex>::iterator m_it;
   };
 
   vertex_iterator vertex_begin() { return vertex_iterator(m_vertices.begin()); }
@@ -173,7 +176,7 @@ private:
 
   struct EdgeTo {
 
-    EdgeTo(const_reference destination, E weight = E());
+    EdgeTo(const_pointer destination, E weight = E());
     EdgeTo(const EdgeTo& o) : m_destination(o.m_destination), m_weight(o.m_weight) {}
     EdgeTo& operator=(EdgeTo o) { swap(o); return *this; }
     void swap(EdgeTo& o);
@@ -186,22 +189,20 @@ private:
 
   struct Vertex {
 
-    Vertex(const_reference data, Alloc allocator);
-    Vertex(const Vertex& o);
-    ~Vertex();
+    Vertex(const_reference data) : m_data(data), m_edges() {}
+    Vertex(const Vertex& o) : m_data(o.m_data), m_edges(o.m_edges) {}
     Vertex& operator=(Vertex o) { swap(o); return *this; }
-    void swap(Vertex& o) { std::swap(m_data, o.m_data); std::swap(m_edges, o.m_edges); std::swap(m_allocator, o.m_allocator);}
+    void swap(Vertex& o) { std::swap(m_data, o.m_data); std::swap(m_edges, o.m_edges);}
 
     bool operator==(const Vertex& other) const;
 
-    void addEdge(const_reference destination, E weight = E());
+    void addEdge(const_pointer destination, E weight = E());
     void removeEdge(const_reference destination, E weight = E());
     void removeAllEdgesTo(const_reference destination);
     std::vector<Edge> edges() const;
 
-    pointer m_data;
+    value_type m_data;
     std::list<EdgeTo> m_edges;
-    Alloc& m_allocator;
   };
 
   typename std::vector<Vertex >::const_iterator find(const_reference data) const;
@@ -209,28 +210,27 @@ private:
 
   bool m_directed;
   std::vector<Vertex> m_vertices;
-  Alloc m_allocator;
 };
 
 
 // Edge
 
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::Edge::Edge(pointer source, pointer destination, E weight)
+template <typename V, typename E>
+inline Graph<V, E>::Edge::Edge(const_pointer source, const_pointer destination, const E& weight)
   : m_source(source)
   , m_destination(destination)
   , m_weight(weight)
 {}
 
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::Edge::Edge(const Edge& o)
+template <typename V, typename E>
+inline Graph<V, E>::Edge::Edge(const Edge& o)
   : m_source(o.m_source)
   , m_destination(o.m_destination)
   , m_weight(o.m_weight)
 {}
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::Edge::swap(Edge& o)
+template <typename V, typename E>
+inline void Graph<V, E>::Edge::swap(Edge& o)
 {
   std::swap(m_source, o.m_source);
   std::swap(m_destination, o.m_destination);
@@ -240,16 +240,16 @@ inline void Graph<V, E, Alloc>::Edge::swap(Edge& o)
 
 // edge iterator
 
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::edge_iterator::edge_iterator(const_reference_self_type o)
+template <typename V, typename E>
+inline Graph<V, E>::edge_iterator::edge_iterator(const_reference_self_type o)
   : m_vertices(o.m_vertices)
   , m_vertex_it(o.m_vertex_it)
   , m_edge_it(o.m_edge_it)
   , m_edge()
 {}
 
-template <typename V, typename E, typename Alloc>
-bool Graph<V, E, Alloc>::edge_iterator::operator==(const_reference_self_type o) const
+template <typename V, typename E>
+bool Graph<V, E>::edge_iterator::operator==(const_reference_self_type o) const
 {
   const bool this_is_at_end = m_vertex_it == m_vertices.end();
   const bool other_is_at_end = o.m_vertex_it == o.m_vertices.end();
@@ -260,8 +260,8 @@ bool Graph<V, E, Alloc>::edge_iterator::operator==(const_reference_self_type o) 
          *m_edge_it == *(o.m_edge_it);
 }
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::edge_iterator::swap(reference_self_type other)
+template <typename V, typename E>
+inline void Graph<V, E>::edge_iterator::swap(reference_self_type other)
 {
   std::swap(m_vertices, other.m_vertices);
   std::swap(m_vertex_it, other.m_vertex_it);
@@ -269,8 +269,8 @@ inline void Graph<V, E, Alloc>::edge_iterator::swap(reference_self_type other)
   std::swap(m_edge, other.m_edge);
 }
 
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::edge_iterator::edge_iterator(std::vector<Vertex> vertices, bool begin)
+template <typename V, typename E>
+inline Graph<V, E>::edge_iterator::edge_iterator(std::vector<Vertex> vertices, bool begin)
   : m_vertices(vertices), m_vertex_it(), m_edge_it(), m_edge()
 {
   if (begin) {
@@ -285,18 +285,18 @@ inline Graph<V, E, Alloc>::edge_iterator::edge_iterator(std::vector<Vertex> vert
   }
 }
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::edge_iterator::resetEdge()
+template <typename V, typename E>
+inline void Graph<V, E>::edge_iterator::resetEdge()
 {
   if (m_vertex_it == m_vertices.end() || (*m_vertex_it).m_edges.empty()) {
     m_edge = Edge();
   } else {
-    m_edge = Edge((*m_vertex_it).m_data, (*m_edge_it).m_destination, (*m_edge_it).m_weight);
+    m_edge = Edge( &(*m_vertex_it).m_data, (*m_edge_it).m_destination, (*m_edge_it).m_weight);
   }
 }
 
-template <typename V, typename E, typename Alloc>
-void Graph<V, E, Alloc>::edge_iterator::advance(int n)
+template <typename V, typename E>
+void Graph<V, E>::edge_iterator::advance(int n)
 {
   while (n > 0 && m_vertex_it != m_vertices.end()) {
     const int edgesAhead = std::distance(m_edge_it, (*m_vertex_it).m_edges.end()) - 1;
@@ -317,22 +317,21 @@ void Graph<V, E, Alloc>::edge_iterator::advance(int n)
 }
 
 // EdgeTo
-
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::EdgeTo::EdgeTo(const_reference destination, E weight)
-  : m_destination(const_cast<pointer>(&destination))
+template <typename V, typename E>
+inline Graph<V, E>::EdgeTo::EdgeTo(const_pointer destination, E weight)
+  : m_destination(const_cast<pointer>(destination))
   , m_weight(weight)
 {}
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::EdgeTo::swap(EdgeTo& o)
+template <typename V, typename E>
+inline void Graph<V, E>::EdgeTo::swap(EdgeTo& o)
 {
   std::swap(m_destination, o.m_destination);
   std::swap(m_weight, o.m_weight);
 }
 
-template <typename V, typename E, typename Alloc>
-inline bool Graph<V, E, Alloc>::EdgeTo::operator==(const EdgeTo& other) const
+template <typename V, typename E>
+inline bool Graph<V, E>::EdgeTo::operator==(const EdgeTo& other) const
 {
   return m_destination == other.m_destination &&
          m_weight == other.m_weight;
@@ -341,49 +340,22 @@ inline bool Graph<V, E, Alloc>::EdgeTo::operator==(const EdgeTo& other) const
 
 // Vertex
 
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::Vertex::Vertex(const_reference data, Alloc allocator)
- : m_data()
- , m_edges()
- , m_allocator(allocator)
-{
-  m_data = m_allocator.allocate(1);
-  m_allocator.construct(m_data, data);
-}
-
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::Vertex::Vertex(const Vertex& o)
-  : m_data()
-  , m_edges(o.m_edges)
-  , m_allocator(o.m_allocator)
-{
-  m_data = m_allocator.allocate(1);
-  m_allocator.construct(m_data, *(o.m_data));
-}
-
-template <typename V, typename E, typename Alloc>
-inline Graph<V, E, Alloc>::Vertex::~Vertex()
-{
-  m_allocator.destroy(m_data);
-  m_allocator.deallocate(m_data, 1);
-}
-
-template <typename V, typename E, typename Alloc>
-inline bool Graph<V, E, Alloc>::Vertex::operator==(const Vertex& other) const
+template <typename V, typename E>
+inline bool Graph<V, E>::Vertex::operator==(const Vertex& other) const
 {
   return m_data == other.m_data &&
          m_edges.size() == other.m_edges.size() &&
          m_edges == other.m_edges;
 }
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::Vertex::addEdge(const_reference destination, E weight)
+template <typename V, typename E>
+inline void Graph<V, E>::Vertex::addEdge(const_pointer destination, E weight)
 {
   m_edges.push_back(EdgeTo(destination, weight));
 }
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::Vertex::removeEdge(const_reference destination, E weight)
+template <typename V, typename E>
+inline void Graph<V, E>::Vertex::removeEdge(const_reference destination, E weight)
 {
   m_edges.erase(std::find_if(m_edges.begin(), m_edges.end(),
                              [&destination, &weight](const EdgeTo& e)
@@ -391,65 +363,80 @@ inline void Graph<V, E, Alloc>::Vertex::removeEdge(const_reference destination, 
                                       e.m_weight == weight;}));
 }
 
-template <typename V, typename E, typename Alloc>
-inline void Graph<V, E, Alloc>::Vertex::removeAllEdgesTo(const_reference destination)
+template <typename V, typename E>
+inline void Graph<V, E>::Vertex::removeAllEdgesTo(const_reference destination)
 {
   std::remove_if(m_edges.begin(), m_edges.end(),
                  [&destination](const EdgeTo& e)
                  { return *e.m_destination == destination; });
 }
 
-template <typename V, typename E, typename Alloc>
-inline std::vector<typename Graph<V, E, Alloc>::Edge> Graph<V, E, Alloc>::Vertex::edges() const
+template <typename V, typename E>
+inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::Vertex::edges() const
 {
-  std::vector<Graph<V, E, Alloc>::Edge> retval;
-
+  std::vector<Graph<V, E>::Edge> retval;
+#ifdef _GLIBCXX_PARALLEL
+  for (auto& e : m_edges)
+    retval.push_back(Edge( &m_data, e.m_destination, e.m_weight));
+#else
   std::for_each(m_edges.begin(), m_edges.end(),
                  [&retval, this](const EdgeTo& e)
-                 { retval.push_back(Edge(this->m_data, e.m_destination, e.m_weight)); });
-
+                 { retval.push_back(Edge( &this->m_data, e.m_destination, e.m_weight)); });
+#endif
   return retval;
 }
 
 
 // Graph
 
-template <typename V, typename E, typename Alloc>
-inline typename Graph<V, E, Alloc>::size_type Graph<V, E, Alloc>::numberOfEdges() const
+template <typename V, typename E>
+inline typename Graph<V, E>::size_type Graph<V, E>::numberOfEdges() const
 {
+#ifdef _GLIBCXX_PARALLEL
+
+  int sum = 0;
+  for (typename std::vector<Vertex>::const_iterator cit = m_vertices.begin(); cit != m_vertices.end(); ++cit)
+    sum += (*cit).m_edges.size();
+
+  return sum;
+
+#else
+
+  /// @bug does not work with parallel mode
   return std::accumulate(m_vertices.begin(), m_vertices.end(), 0,
                          [](int sum, const Vertex& v)
                          { return sum + v.m_edges.size(); });
+#endif
 }
 
-template <typename V, typename E, typename Alloc>
-inline bool Graph<V, E, Alloc>::addVertex(const_reference data)
+template <typename V, typename E>
+inline bool Graph<V, E>::addVertex(const_reference data)
 {
   if (find(data) != m_vertices.end())
     return false;
 
-  m_vertices.push_back(Vertex(data, m_allocator));
+  m_vertices.push_back(Vertex(data));
   return true;
 }
 
-template <typename V, typename E, typename Alloc>
-inline bool Graph<V, E, Alloc>::removeVertex(const_reference data)
+template <typename V, typename E>
+inline bool Graph<V, E>::removeVertex(const_reference data)
 {
   typename std::vector<Vertex>::iterator it = find(data);
   if (it == m_vertices.end())
     return false;
 
-  std::vector<const_pointer> neighbours = neighboursOf(data);
+  std::vector<value_type> neighbours = neighboursOf(data);
   std::for_each(neighbours.begin(), neighbours.end(),
-                [this, &data] (const_pointer vertex)
-                { this->removeAllEdges(*vertex, data); } );
+                [this, &data] (const_reference vertex)
+                { this->removeAllEdges(vertex, data); } );
 
   m_vertices.erase(it);
   return true;
 }
 
-template <typename V, typename E, typename Alloc>
-bool Graph<V, E, Alloc>::addEdge(const_reference source, const_reference destination, E weight)
+template <typename V, typename E>
+bool Graph<V, E>::addEdge(const_reference source, const_reference destination, E weight)
 {
   typename std::vector<Vertex>::iterator source_it = find(source);
   if (source_it == m_vertices.end())
@@ -459,15 +446,15 @@ bool Graph<V, E, Alloc>::addEdge(const_reference source, const_reference destina
   if (destination_it == m_vertices.end())
     return false;
 
-  (*source_it).addEdge(destination, weight);
+  (*source_it).addEdge( &(*destination_it).m_data, weight);
   if (!m_directed)
-    (*destination_it).addEdge(source, weight);
+    (*destination_it).addEdge( &(*source_it).m_data, weight);
 
   return true;
 }
 
-template <typename V, typename E, typename Alloc>
-inline bool Graph<V, E, Alloc>::removeEdge(const_reference source, const_reference destination, E weight)
+template <typename V, typename E>
+inline bool Graph<V, E>::removeEdge(const_reference source, const_reference destination, E weight)
 {
   typename std::vector<Vertex>::iterator source_it = find(source);
   if (source_it == m_vertices.end())
@@ -484,8 +471,8 @@ inline bool Graph<V, E, Alloc>::removeEdge(const_reference source, const_referen
   return true;
 }
 
-template <typename V, typename E, typename Alloc>
-inline bool Graph<V, E, Alloc>::removeAllEdges(const_reference source, const_reference destination)
+template <typename V, typename E>
+inline bool Graph<V, E>::removeAllEdges(const_reference source, const_reference destination)
 {
   typename std::vector<Vertex>::iterator source_it = find(source);
   if (source_it == m_vertices.end())
@@ -502,35 +489,35 @@ inline bool Graph<V, E, Alloc>::removeAllEdges(const_reference source, const_ref
   return true;
 }
 
-template <typename V, typename E, typename Alloc>
-inline std::vector<typename Graph<V, E, Alloc>::const_pointer> Graph<V, E, Alloc>::vertices() const
+template <typename V, typename E>
+inline std::vector<typename Graph<V, E>::value_type> Graph<V, E>::vertices() const
 {
-  std::vector<const_pointer> retval;
+  std::vector<value_type> retval;
   std::for_each(m_vertices.begin(), m_vertices.end(),
                 [&retval](const Vertex& v)
                 { retval.push_back(v.m_data); });
   return retval;
 }
 
-template <typename V, typename E, typename Alloc>
-std::vector<typename Graph<V, E, Alloc>::const_pointer> Graph<V, E, Alloc>::neighboursOf(const_reference data) const
+template <typename V, typename E>
+std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_reference data) const
 {
-  typename std::vector<const_pointer> retval;
+  typename std::vector<value_type> retval;
   typename std::vector<Vertex >::const_iterator vertex_it = find(data);
   if (vertex_it == m_vertices.end())
     return retval;
 
-  std::set<pointer> tmp;
+  std::set<value_type> tmp;
   std::for_each((*vertex_it).m_edges.begin(), (*vertex_it).m_edges.end(),
                 [&tmp, &retval](const EdgeTo& e)
-                { if (tmp.insert(e.m_destination).second)
-                    retval.push_back(e.m_destination); });
+                { if (tmp.insert(*e.m_destination).second)
+                    retval.push_back(*e.m_destination); });
 
   return retval;
 }
 
-template <typename V, typename E, typename Alloc>
-std::vector<E> Graph<V, E, Alloc>::weightsBetween(const_reference source, const_reference destination) const
+template <typename V, typename E>
+std::vector<E> Graph<V, E>::weightsBetween(const_reference source, const_reference destination) const
 {
   std::vector<E> retval;
   typename std::vector<Vertex>::const_iterator vertex_it = find(source);
@@ -545,10 +532,10 @@ std::vector<E> Graph<V, E, Alloc>::weightsBetween(const_reference source, const_
   return retval;
 }
 
-template <typename V, typename E, typename Alloc>
-inline std::vector<typename Graph<V, E, Alloc>::Edge> Graph<V, E, Alloc>::edges() const
+template <typename V, typename E>
+inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::edges() const
 {
-  std::vector<typename Graph<V, E, Alloc>::Edge> retval;
+  std::vector<typename Graph<V, E>::Edge> retval;
 
   std::for_each(m_vertices.begin(), m_vertices.end(),
                 [&retval](const Vertex& v)
@@ -560,22 +547,23 @@ inline std::vector<typename Graph<V, E, Alloc>::Edge> Graph<V, E, Alloc>::edges(
 }
 
 
-template <typename V, typename E, typename Alloc>
-inline typename std::vector<typename Graph<V, E, Alloc>::Vertex >::const_iterator
-Graph<V, E, Alloc>::find(const_reference data) const
+template <typename V, typename E>
+inline typename std::vector<typename Graph<V, E>::Vertex >::const_iterator
+Graph<V, E>::find(const_reference data) const
 {
   return std::find_if(m_vertices.begin(), m_vertices.end(),
                       [&data](const Vertex& v)
-                      { return *(v.m_data) == data; });
+                      { return v.m_data == data; });
 }
 
-template <typename V, typename E, typename Alloc>
-inline typename std::vector<typename Graph<V, E, Alloc>::Vertex >::iterator
-Graph<V, E, Alloc>::find(const_reference data)
+/// @todo call the const it version
+template <typename V, typename E>
+inline typename std::vector<typename Graph<V, E>::Vertex >::iterator
+Graph<V, E>::find(const_reference data)
 {
   return std::find_if(m_vertices.begin(), m_vertices.end(),
                       [&data](const Vertex& v)
-                      { return *(v.m_data) == data; });
+                      { return v.m_data == data; });
 }
 
 

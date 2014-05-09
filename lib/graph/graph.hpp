@@ -191,11 +191,11 @@ private:
   struct Vertex {
 
     Vertex(const_reference data) : m_data(data), m_edges() {}
-    Vertex(const Vertex& o) : m_data(o.m_data), m_edges(o.m_edges) {}
+    Vertex(const_reference o) : m_data(o.m_data), m_edges(o.m_edges) {}
     Vertex& operator=(Vertex o) { swap(o); return *this; }
     void swap(Vertex& o) { std::swap(m_data, o.m_data); std::swap(m_edges, o.m_edges);}
 
-    bool operator==(const Vertex& other) const;
+    bool operator==(const_reference other) const;
 
     void addEdge(const_pointer destination, const_weight_reference weight = weight_type());
     void removeEdge(const_reference destination, const_weight_reference weight = weight_type());
@@ -342,7 +342,7 @@ inline bool Graph<V, E>::EdgeTo::operator==(const EdgeTo& other) const
 // Vertex
 
 template <typename V, typename E>
-inline bool Graph<V, E>::Vertex::operator==(const Vertex& other) const
+inline bool Graph<V, E>::Vertex::operator==(const_reference other) const
 {
   return m_data == other.m_data &&
          m_edges.size() == other.m_edges.size() &&
@@ -376,6 +376,7 @@ template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::Vertex::edges() const
 {
   std::vector<Graph<V, E>::Edge> retval;
+  /// @todo rewrite for_each to parallel aware
   std::for_each(m_edges.begin(), m_edges.end(),
                  [&retval, this](const EdgeTo& e)
                  { retval.push_back(Edge( &this->m_data, e.m_destination, e.m_weight)); });
@@ -400,7 +401,7 @@ inline typename Graph<V, E>::size_type Graph<V, E>::numberOfEdges() const
 
   /// @bug does not work with parallel mode
   return std::accumulate(m_vertices.begin(), m_vertices.end(), 0,
-                         [](int sum, const Vertex& v)
+                         [](int sum, const_reference v)
                          { return sum + v.m_edges.size(); });
 #endif
 }
@@ -489,8 +490,9 @@ template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::value_type> Graph<V, E>::vertices() const
 {
   std::vector<value_type> retval;
+  /// @todo rewrite for_each to parallel aware
   std::for_each(m_vertices.begin(), m_vertices.end(),
-                [&retval](const Vertex& v)
+                [&retval](const_reference v)
                 { retval.push_back(v.m_data); });
   return retval;
 }
@@ -504,6 +506,7 @@ std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_re
     return retval;
 
   std::set<value_type> tmp;
+  /// @todo rewrite for_each to parallel aware
   std::for_each((*vertex_it).m_edges.begin(), (*vertex_it).m_edges.end(),
                 [&tmp, &retval](const EdgeTo& e)
                 { if (tmp.insert(*e.m_destination).second)
@@ -520,6 +523,7 @@ std::vector<E> Graph<V, E>::weightsBetween(const_reference source, const_referen
   if (vertex_it == m_vertices.end())
     return retval;
 
+  /// @todo rewrite for_each to parallel aware
   std::for_each((*vertex_it).m_edges.begin(), (*vertex_it).m_edges.end(),
                 [&retval, &destination](const EdgeTo& e)
                 { if (*(e.m_destination) == destination)
@@ -533,8 +537,9 @@ inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::edges() const
 {
   std::vector<typename Graph<V, E>::Edge> retval;
 
+  /// @todo rewrite for_each to parallel aware
   std::for_each(m_vertices.begin(), m_vertices.end(),
-                [&retval](const Vertex& v)
+                [&retval](const_reference v)
                 { const std::vector<Edge> e = v.edges();
                   retval.insert(retval.end(), e.begin(), e.end());
                 });
@@ -548,7 +553,7 @@ inline typename std::vector<typename Graph<V, E>::Vertex >::const_iterator
 Graph<V, E>::find(const_reference data) const
 {
   return std::find_if(m_vertices.begin(), m_vertices.end(),
-                      [&data](const Vertex& v)
+                      [&data](const_reference v)
                       { return v.m_data == data; });
 }
 
@@ -558,7 +563,7 @@ inline typename std::vector<typename Graph<V, E>::Vertex >::iterator
 Graph<V, E>::find(const_reference data)
 {
   return std::find_if(m_vertices.begin(), m_vertices.end(),
-                      [&data](const Vertex& v)
+                      [&data](const_reference v)
                       { return v.m_data == data; });
 }
 

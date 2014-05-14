@@ -371,9 +371,11 @@ inline void Graph<V, E>::Vertex::removeEdge(const_reference destination, const_w
 template <typename V, typename E>
 inline void Graph<V, E>::Vertex::removeAllEdgesTo(const_reference destination)
 {
-  std::remove_if(m_edges.begin(), m_edges.end(),
-                 [&destination](const EdgeTo& e)
-                 { return *e.m_destination == destination; });
+  m_edges.erase(
+    std::remove_if(m_edges.begin(), m_edges.end(),
+                  [&destination](const EdgeTo& e)
+                  { return *e.m_destination == destination; }),
+    m_edges.end());
 }
 
 template <typename V, typename E>
@@ -472,7 +474,7 @@ inline bool Graph<V, E>::removeAllEdges(const_reference source, const_reference 
     return false;
 
   (*source_it).removeAllEdgesTo(destination);
-  if (m_directed)
+  if (!m_directed)
     (*destination_it).removeAllEdgesTo(source);
 
   return true;

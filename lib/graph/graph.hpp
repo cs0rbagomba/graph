@@ -143,8 +143,8 @@ public:
     reference_self_type operator=(self_type o) { swap(o); return *this; }
     void swap(reference_self_type o) { std::swap(m_it, o.m_it); }
 
-    const_reference operator*() { return (*m_it).m_data; }
-    const_pointer operator->() { return &(*m_it).m_data; }
+    const_reference operator*() { return m_it->m_data; }
+    const_pointer operator->() { return &m_it->m_data; }
     self_type &operator++() { ++m_it; return *this; }
     self_type operator++(int) { self_type tmp(*this); ++(*this); return tmp; }
     self_type operator+(difference_type n) { self_type tmp(*this); tmp.pos_ += n; return tmp; }
@@ -284,7 +284,7 @@ inline Graph<V, E>::edge_iterator::edge_iterator(v_container vertices, bool begi
       ++m_vertex_it;
 
     if (m_vertex_it != m_vertices.end())
-      m_edge_it = (*m_vertex_it).m_edges.begin();
+      m_edge_it = m_vertex_it->m_edges.begin();
   } else {
     m_vertex_it = m_vertices.end();
   }
@@ -296,7 +296,7 @@ inline void Graph<V, E>::edge_iterator::resetEdge()
   if (m_vertex_it == m_vertices.end() || (*m_vertex_it).m_edges.empty()) {
     m_edge = Edge();
   } else {
-    m_edge = Edge( m_vertex_it->m_data, (m_edge_it->m_destination)->m_data, (*m_edge_it).m_weight);
+    m_edge = Edge( m_vertex_it->m_data, (m_edge_it->m_destination)->m_data, m_edge_it->m_weight);
   }
 }
 
@@ -304,7 +304,7 @@ template <typename V, typename E>
 void Graph<V, E>::edge_iterator::advance(int n)
 {
   while (n > 0 && m_vertex_it != m_vertices.end()) {
-    const int edgesAhead = std::distance(m_edge_it, (*m_vertex_it).m_edges.end()) - 1;
+    const int edgesAhead = std::distance(m_edge_it, m_vertex_it->m_edges.end()) - 1;
     if (n <= edgesAhead) {
       std::advance(m_edge_it, n);
       return;
@@ -314,8 +314,8 @@ void Graph<V, E>::edge_iterator::advance(int n)
     ++m_vertex_it;
 
     if (m_vertex_it != m_vertices.end()) {
-      m_edge_it = (*m_vertex_it).m_edges.begin();
-      if (m_edge_it != (*m_vertex_it).m_edges.end())
+      m_edge_it = m_vertex_it->m_edges.begin();
+      if (m_edge_it != m_vertex_it->m_edges.end())
         --n;
     }
   }
@@ -438,9 +438,9 @@ bool Graph<V, E>::addEdge(const_reference source, const_reference destination, c
   if (destination_it == m_vertices.end())
     return false;
 
-  (*source_it).addEdge( v_iterator(destination_it), weight);
+  source_it->addEdge( v_iterator(destination_it), weight);
   if (!m_directed)
-    (*destination_it).addEdge( v_iterator(source_it), weight);
+    destination_it->addEdge( v_iterator(source_it), weight);
 
   return true;
 }
@@ -456,9 +456,9 @@ inline bool Graph<V, E>::removeEdge(const_reference source, const_reference dest
   if (destination_it == m_vertices.end())
     return false;
 
-  (*source_it).removeEdge(destination, weight);
+  source_it->removeEdge(destination, weight);
   if (!m_directed)
-    (*destination_it).removeEdge(source, weight);
+    destination_it->removeEdge(source, weight);
 
   return true;
 }
@@ -474,9 +474,9 @@ inline bool Graph<V, E>::removeAllEdges(const_reference source, const_reference 
   if (destination_it == m_vertices.end())
     return false;
 
-  (*source_it).removeAllEdgesTo(destination_it);
+  source_it->removeAllEdgesTo(destination_it);
   if (!m_directed)
-    (*destination_it).removeAllEdgesTo(source_it);
+    destination_it->removeAllEdgesTo(source_it);
 
   return true;
 }
@@ -502,7 +502,7 @@ std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_re
 
   std::set<v_const_iterator> tmp;
   /// @todo rewrite for_each to parallel aware
-  std::for_each((*vertex_it).m_edges.begin(), (*vertex_it).m_edges.end(),
+  std::for_each(vertex_it->m_edges.begin(), vertex_it->m_edges.end(),
                 [&tmp, &retval](const EdgeTo& e)
                 { if (tmp.insert(e.m_destination).second)
                     retval.push_back((e.m_destination)->m_data); });
@@ -519,9 +519,9 @@ std::vector<E> Graph<V, E>::weightsBetween(const_reference source, const_referen
     return retval;
 
   /// @todo rewrite for_each to parallel aware
-  std::for_each((*vertex_it).m_edges.begin(), (*vertex_it).m_edges.end(),
+  std::for_each(vertex_it->m_edges.begin(), vertex_it->m_edges.end(),
                 [&retval, &destination](const EdgeTo& e)
-                { if ((*(e.m_destination)).m_data == destination)
+                { if (e.m_destination->m_data == destination)
                     retval.push_back(e.m_weight); });
 
   return retval;

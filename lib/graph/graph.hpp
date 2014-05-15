@@ -6,9 +6,6 @@
 #include <set>
 
 #include <algorithm>
-#include <numeric> // accumulate
-#include <iterator>
-#include <memory>
 
 
 template <typename V,
@@ -47,7 +44,7 @@ private:
     void swap(EdgeTo& o);
     bool operator==(const EdgeTo& o) const;
 
-    v_iterator m_destination;
+    v_const_iterator m_destination;
     weight_type m_weight;
   };
 
@@ -421,10 +418,9 @@ inline bool Graph<V, E>::removeVertex(const_reference data)
   if (it == m_vertices.end())
     return false;
 
-  std::vector<value_type> neighbours = neighboursOf(data);
-  std::for_each(neighbours.begin(), neighbours.end(),
-                [this, &data] (const_reference vertex)
-                { this->removeAllEdges(vertex, data); } );
+  std::for_each(m_vertices.begin(), m_vertices.end(),
+                [&it] (Vertex& v)
+                { v.removeAllEdgesTo(it); } );
 
   m_vertices.erase(it);
   adjustEdges(it);
@@ -504,7 +500,7 @@ std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_re
   if (vertex_it == m_vertices.end())
     return retval;
 
-  std::set<v_iterator> tmp;
+  std::set<v_const_iterator> tmp;
   /// @todo rewrite for_each to parallel aware
   std::for_each((*vertex_it).m_edges.begin(), (*vertex_it).m_edges.end(),
                 [&tmp, &retval](const EdgeTo& e)
@@ -566,13 +562,14 @@ Graph<V, E>::find(const_reference data)
 }
 
 template <typename V, typename E>
-void Graph<V, E>::adjustEdges(v_iterator /*vit*/)
+void Graph<V, E>::adjustEdges(v_iterator deleted_vit)
 {
-//   std::for_each(m_vertices.begin(), m_vertices.end(),
-//                 [&vit](Vertex& v)
-//                 { for (EdgeTo& e : v.m_edges)
-//                     ; /// @bug cannot be done now, wait till the pointer->iterator conversion
-//                 });
+  std::for_each(m_vertices.begin(), m_vertices.end(),
+                [&deleted_vit](Vertex& v)
+                { for (EdgeTo& e : v.m_edges)
+                    if (e.m_destination > deleted_vit)
+                      --e.m_destination;
+                });
 }
 
 #endif // GRAPH_H

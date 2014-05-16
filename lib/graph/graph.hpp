@@ -29,6 +29,18 @@ public:
   class vertex_iterator;
   class edge_iterator;
 
+  class VertexAlreadyExistsExcepttion : public std::logic_error
+  {
+  public:
+    VertexAlreadyExistsExcepttion(const std::string& vertex_name) : std::logic_error("Vertex '" + vertex_name + "' already exists.") {}
+  };
+
+  class VertexDoesNotExistExcepttion : public std::logic_error
+  {
+  public:
+    VertexDoesNotExistExcepttion(const std::string& vertex_name) : std::logic_error("Vertex '" + vertex_name + "' does not exist.") {}
+  };
+
 private:
 
   struct Vertex;
@@ -108,11 +120,11 @@ public:
 
   /// @todo rename Vertex & Edge?
   // Modifiers
-  bool addVertex(const_reference data);
-  bool removeVertex(const_reference data);
-  bool addEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
-  bool removeEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
-  bool removeAllEdges(const_reference source, const_reference destination);
+  void addVertex(const_reference data);
+  void removeVertex(const_reference data);
+  void addEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
+  void removeEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
+  void removeAllEdges(const_reference source, const_reference destination);
 
   // Lookup
   bool contains(const_reference data) const { return find(data) != m_vertices.end(); }
@@ -211,6 +223,8 @@ public:
 private:
   v_const_iterator find(const_reference data) const;
   v_iterator find(const_reference data);
+  v_const_iterator findAndCheck(const_reference data, bool existence_expected = true) const;
+  v_iterator findAndCheck(const_reference data, bool existence_expected = true);
   void adjustEdges(v_iterator vit);
 
   const bool m_directed;
@@ -402,21 +416,16 @@ inline typename Graph<V, E>::size_type Graph<V, E>::numberOfEdges() const
 }
 
 template <typename V, typename E>
-inline bool Graph<V, E>::addVertex(const_reference data)
+inline void Graph<V, E>::addVertex(const_reference data)
 {
-  if (find(data) != m_vertices.end())
-    return false;
-
+  findAndCheck(data, false);
   m_vertices.push_back(Vertex(data));
-  return true;
 }
 
 template <typename V, typename E>
-inline bool Graph<V, E>::removeVertex(const_reference data)
+inline void Graph<V, E>::removeVertex(const_reference data)
 {
-  v_iterator it = find(data);
-  if (it == m_vertices.end())
-    return false;
+  v_iterator it = findAndCheck(data);
 
   std::for_each(m_vertices.begin(), m_vertices.end(),
                 [&it] (Vertex& v)
@@ -424,61 +433,39 @@ inline bool Graph<V, E>::removeVertex(const_reference data)
 
   m_vertices.erase(it);
   adjustEdges(it);
-  return true;
 }
 
 template <typename V, typename E>
-bool Graph<V, E>::addEdge(const_reference source, const_reference destination, const_weight_reference weight)
+void Graph<V, E>::addEdge(const_reference source, const_reference destination, const_weight_reference weight)
 {
-  v_iterator source_it = find(source);
-  if (source_it == m_vertices.end())
-    return false;
-
-  v_iterator destination_it = find(destination);
-  if (destination_it == m_vertices.end())
-    return false;
+  v_iterator source_it = findAndCheck(source);
+  v_iterator destination_it = findAndCheck(destination);
 
   source_it->addEdge( v_iterator(destination_it), weight);
   if (!m_directed)
     destination_it->addEdge( v_iterator(source_it), weight);
-
-  return true;
 }
 
 template <typename V, typename E>
-inline bool Graph<V, E>::removeEdge(const_reference source, const_reference destination, const_weight_reference weight)
+inline void Graph<V, E>::removeEdge(const_reference source, const_reference destination, const_weight_reference weight)
 {
-  v_iterator source_it = find(source);
-  if (source_it == m_vertices.end())
-    return false;
-
-  v_iterator destination_it = find(destination);
-  if (destination_it == m_vertices.end())
-    return false;
+  v_iterator source_it = findAndCheck(source);
+  v_iterator destination_it = findAndCheck(destination);
 
   source_it->removeEdge(destination, weight);
   if (!m_directed)
     destination_it->removeEdge(source, weight);
-
-  return true;
 }
 
 template <typename V, typename E>
-inline bool Graph<V, E>::removeAllEdges(const_reference source, const_reference destination)
+inline void Graph<V, E>::removeAllEdges(const_reference source, const_reference destination)
 {
-  v_iterator source_it = find(source);
-  if (source_it == m_vertices.end())
-    return false;
-
-  v_iterator destination_it = find(destination);
-  if (destination_it == m_vertices.end())
-    return false;
+  v_iterator source_it = findAndCheck(source);
+  v_iterator destination_it = findAndCheck(destination);
 
   source_it->removeAllEdgesTo(destination_it);
   if (!m_directed)
     destination_it->removeAllEdgesTo(source_it);
-
-  return true;
 }
 
 template <typename V, typename E>
@@ -496,9 +483,7 @@ template <typename V, typename E>
 std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_reference data) const
 {
   typename std::vector<value_type> retval;
-  v_const_iterator vertex_it = find(data);
-  if (vertex_it == m_vertices.end())
-    return retval;
+  v_const_iterator vertex_it = findAndCheck(data);
 
   std::set<v_const_iterator> tmp;
   /// @todo rewrite for_each to parallel aware
@@ -514,9 +499,8 @@ template <typename V, typename E>
 std::vector<E> Graph<V, E>::weightsBetween(const_reference source, const_reference destination) const
 {
   std::vector<E> retval;
-  v_const_iterator vertex_it = find(source);
-  if (vertex_it == m_vertices.end())
-    return retval;
+  v_const_iterator vertex_it = findAndCheck(source);
+  findAndCheck(destination);
 
   /// @todo rewrite for_each to parallel aware
   std::for_each(vertex_it->m_edges.begin(), vertex_it->m_edges.end(),
@@ -552,7 +536,6 @@ Graph<V, E>::find(const_reference data) const
                       { return v.m_data == data; });
 }
 
-/// @todo call the const it version
 template <typename V, typename E>
 inline typename Graph<V, E>::v_iterator
 Graph<V, E>::find(const_reference data)
@@ -571,6 +554,34 @@ void Graph<V, E>::adjustEdges(v_iterator deleted_vit)
                     if (e.m_destination > deleted_vit)
                       --e.m_destination;
                 });
+}
+
+template <typename V, typename E>
+typename Graph<V, E>::v_const_iterator
+Graph<V, E>::findAndCheck(const_reference data, bool existence_expected) const
+{
+  v_const_iterator it = find(data);
+  const bool found = (it != m_vertices.end());
+  if (!found && existence_expected)
+    throw VertexDoesNotExistExcepttion(data);
+  if (found && !existence_expected)
+    throw VertexAlreadyExistsExcepttion(data);
+
+  return it;
+}
+
+template <typename V, typename E>
+typename Graph<V, E>::v_iterator
+Graph<V, E>::findAndCheck(const_reference data, bool existence_expected)
+{
+  v_iterator it = find(data);
+  const bool found = (it != m_vertices.end());
+  if (!found && existence_expected)
+    throw VertexDoesNotExistExcepttion(data);
+  if (found && !existence_expected)
+    throw VertexAlreadyExistsExcepttion(data);
+
+  return it;
 }
 
 #endif // GRAPH_H

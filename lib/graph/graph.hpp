@@ -7,6 +7,24 @@
 
 #include <algorithm>
 
+#include <sstream> // ostringstream
+#include <boost/graph/graph_concepts.hpp>
+template <class T>
+inline std::string TToStr(const T t)
+{
+  std::ostringstream oss;
+  oss << t;
+  return oss.str();
+}
+
+template <class C>
+inline std::string TToStr(const std::pair<C, C> t)
+{
+  std::ostringstream oss;
+  oss << TToStr(t.first) << ", " << TToStr(t.second);
+  return oss.str();
+}
+
 
 template <typename V,
           typename E = int>
@@ -32,13 +50,13 @@ public:
   class VertexAlreadyExistsExcepttion : public std::logic_error
   {
   public:
-    VertexAlreadyExistsExcepttion(const std::string& vertex_name) : std::logic_error("Vertex '" + vertex_name + "' already exists.") {}
+    VertexAlreadyExistsExcepttion(const_reference v) : std::logic_error("Vertex '" + TToStr(v) + "' already exists.") {}
   };
 
   class VertexDoesNotExistExcepttion : public std::logic_error
   {
   public:
-    VertexDoesNotExistExcepttion(const std::string& vertex_name) : std::logic_error("Vertex '" + vertex_name + "' does not exist.") {}
+    VertexDoesNotExistExcepttion(const_reference v) : std::logic_error("Vertex '" + TToStr(v) + "' does not exist.") {}
   };
 
 private:
@@ -63,13 +81,15 @@ private:
   struct Vertex {
 
     Vertex(const_reference data) : m_data(data), m_edges() {}
+    Vertex() : m_data(), m_edges()  {}
+
     Vertex(const Vertex& o) : m_data(o.m_data), m_edges(o.m_edges) {}
     Vertex& operator=(Vertex o) { swap(o); return *this; }
     void swap(Vertex& o) { std::swap(m_data, o.m_data); std::swap(m_edges, o.m_edges);}
     bool operator==(const Vertex& o) const;
 
     // parallell accumulate requires both
-    Vertex(int) : m_data(), m_edges()  {}
+    Vertex(int) : Vertex()  {}
     explicit operator int() const { return (int)m_edges.size(); }
 
     void addEdge(v_iterator destination, const_weight_reference weight = weight_type());
@@ -419,7 +439,9 @@ template <typename V, typename E>
 inline void Graph<V, E>::addVertex(const_reference data)
 {
   findAndCheck(data, false);
-  m_vertices.push_back(Vertex(data));
+  Vertex v;
+  v.m_data = data;
+  m_vertices.push_back(v);
 }
 
 template <typename V, typename E>

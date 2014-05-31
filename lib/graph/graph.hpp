@@ -51,7 +51,7 @@ private:
 
   struct Vertex {
 
-    // bevause of parallell accumulate, ctor(int) is needed and that could conflict
+    // because of parallell accumulate, ctor(int) is needed and that could conflict
     // Vertex(const_reference data) : m_data(data), m_edges() {}
     Vertex() : m_data(), m_edges()  {}
 
@@ -270,8 +270,7 @@ bool Graph<V, E>::edge_iterator::operator==(const_reference_self_type o) const
   if ( this_is_at_end && other_is_at_end ) return true;
   if ( this_is_at_end != other_is_at_end ) return false;
 
-  return *m_vertex_it == *(o.m_vertex_it) &&
-         *m_edge_it == *(o.m_edge_it);
+  return *m_vertex_it == *(o.m_vertex_it) && *m_edge_it == *(o.m_edge_it);
 }
 
 template <typename V, typename E>
@@ -391,11 +390,9 @@ template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::Vertex::edges() const
 {
   std::vector<Graph<V, E>::Edge> retval;
+  for (const EdgeTo& e : m_edges)
+    retval.push_back(Edge(m_data, (e.m_destination)->m_data, e.m_weight));
 
-  /// @todo rewrite for_each to parallel aware
-  std::for_each(m_edges.begin(), m_edges.end(),
-                 [this, &retval](const EdgeTo& e)
-                 { retval.push_back(Edge(m_data, (e.m_destination)->m_data, e.m_weight)); });
   return retval;
 }
 
@@ -406,16 +403,16 @@ template <typename V, typename E>
 Graph<V, E>::Graph(std::initializer_list<V> vertex_list)
   : Graph<V, E>()
 {
-  std::for_each(vertex_list.begin(), vertex_list.end(),
-                [this](const_reference v) { addVertex(v); } );
+  for(const V& v : vertex_list)
+    addVertex(v);
 }
 
 template <typename V, typename E>
 Graph<V, E>::Graph(std::initializer_list<Edge> edge_list)
   : Graph<V, E>()
 {
-  std::for_each(edge_list.begin(), edge_list.end(),
-                [this](const Edge& e) { addEdge(e.source, e.destination, e.weight); } );
+  for (const Edge& e : edge_list )
+    addEdge(e.source, e.destination, e.weight);
 }
 
 template <typename V, typename E>
@@ -502,10 +499,9 @@ template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::value_type> Graph<V, E>::vertices() const
 {
   std::vector<value_type> retval;
-  /// @todo rewrite for_each to parallel aware
-  std::for_each(m_vertices.begin(), m_vertices.end(),
-                [&retval](const Vertex& v)
-                { retval.push_back(v.m_data); });
+  for (const Vertex& v : m_vertices)
+    retval.push_back(v.m_data);
+
   return retval;
 }
 
@@ -518,11 +514,9 @@ std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_re
     return retval;
 
   std::set<v_const_iterator> tmp;
-  /// @todo rewrite for_each to parallel aware
-  std::for_each(vertex_it->m_edges.begin(), vertex_it->m_edges.end(),
-                [&data, &tmp, &retval](const EdgeTo& e)
-                { if (tmp.insert(e.m_destination).second)
-                    retval.push_back((e.m_destination)->m_data); });
+  for (const EdgeTo& e : vertex_it->m_edges)
+    if (tmp.insert(e.m_destination).second)
+      retval.push_back((e.m_destination)->m_data);
 
   return retval;
 }
@@ -538,11 +532,9 @@ std::vector<E> Graph<V, E>::weights(const_reference source, const_reference dest
   if (find(destination) == m_vertices.end())
     return retval;
 
-  /// @todo rewrite for_each to parallel aware
-  std::for_each(vertex_it->m_edges.begin(), vertex_it->m_edges.end(),
-                [&retval, &destination](const EdgeTo& e)
-                { if (e.m_destination->m_data == destination)
-                    retval.push_back(e.m_weight); });
+  for (const EdgeTo& e : vertex_it->m_edges)
+    if (e.m_destination->m_data == destination)
+      retval.push_back(e.m_weight);
 
   return retval;
 }
@@ -551,13 +543,10 @@ template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::edges() const
 {
   std::vector<typename Graph<V, E>::Edge> retval;
-
-  /// @todo rewrite for_each to parallel aware
-  std::for_each(m_vertices.begin(), m_vertices.end(),
-                [&retval](const Vertex& v)
-                { const std::vector<Edge> e = v.edges();
-                  retval.insert(retval.end(), e.begin(), e.end());
-                });
+  for (const Vertex& v : m_vertices) {
+    const std::vector<Edge> e = v.edges();
+    retval.insert(retval.end(), e.begin(), e.end());
+  }
 
   return retval;
 }

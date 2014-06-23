@@ -51,8 +51,7 @@ private:
 
   struct Vertex {
 
-    // because of parallell accumulate, ctor(int) is needed and that could conflict
-    // Vertex(const_reference data) : m_data(data), m_edges() {}
+    Vertex(const_reference data) : m_data(data), m_edges() {}
     Vertex() : m_data(), m_edges()  {}
 
     Vertex(const Vertex& o) : m_data(o.m_data), m_edges(o.m_edges) {}
@@ -61,12 +60,12 @@ private:
     bool operator==(const Vertex& o) const;
 
     // parallell accumulate requires both
-    Vertex(int) : Vertex()  {}
+    Vertex(size_type) : Vertex()  {}
     explicit operator int() const { return (int)m_edges.size(); }
 
-    void addEdge(v_iterator destination, const_weight_reference weight = weight_type());
-    void removeEdge(v_iterator destination, const_weight_reference weight = weight_type());
-    void removeAllEdgesTo(v_iterator destination);
+    void addEdge(v_const_iterator destination, const_weight_reference weight = weight_type());
+    void removeEdge(v_const_iterator destination, const_weight_reference weight = weight_type());
+    void removeAllEdgesTo(v_const_iterator destination);
     std::vector<Edge> edges() const;
 
     value_type m_data;
@@ -82,6 +81,7 @@ public:
     Edge() : source(), destination(), weight() {}
     Edge(const_reference source, const_reference destination, const_weight_reference weight);
     Edge(const Edge& o);
+    ~Edge() {}
     Edge& operator=(Edge o) { swap(o); return *this; }
     void swap(Edge& o);
     bool operator==(const Edge& o) const { return source == o.source && destination == o.destination && weight == o.weight; }
@@ -115,6 +115,9 @@ public:
 
   /// @todo rename Vertex & Edge?
   // Modifiers
+  void reserveVertexCapacity(int c) { m_vertices.reserve(c); }
+  void clear() { m_vertices.clear(); }
+
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
   void addEdge(const_reference source, const_reference destination, const_weight_reference weight = weight_type());
@@ -220,7 +223,10 @@ private:
   v_iterator find(const_reference data);
   v_const_iterator findAndCheck(const_reference data, bool existence_expected = true) const;
   v_iterator findAndCheck(const_reference data, bool existence_expected = true);
-  void adjustEdges(v_iterator vit);
+
+  /// @todo make is a vector specializetion
+  void adjustIteratorsAfter(v_iterator vit);
+  void resizeVerticesVector();
 
   const bool m_directed;
   v_container m_vertices;
@@ -362,22 +368,25 @@ inline bool Graph<V, E>::Vertex::operator==(const Vertex& other) const
 }
 
 template <typename V, typename E>
-inline void Graph<V, E>::Vertex::addEdge(v_iterator destination, const_weight_reference weight)
+inline void Graph<V, E>::Vertex::addEdge(v_const_iterator destination, const_weight_reference weight)
 {
   m_edges.push_back(EdgeTo(destination, weight));
 }
 
 template <typename V, typename E>
-inline void Graph<V, E>::Vertex::removeEdge(v_iterator destination, const_weight_reference weight)
+inline void Graph<V, E>::Vertex::removeEdge(v_const_iterator destination, const_weight_reference weight)
 {
-  m_edges.erase(
+  typename std::list<EdgeTo>::iterator it =
     std::find_if(m_edges.begin(), m_edges.end(),
                  [&destination, &weight](const EdgeTo& e)
-                 { return e.m_destination == destination && e.m_weight == weight;}));
+                 { return e.m_destination == destination && e.m_weight == weight;});
+
+  if (it != m_edges.end())
+    m_edges.erase(it);
 }
 
 template <typename V, typename E>
-inline void Graph<V, E>::Vertex::removeAllEdgesTo(v_iterator destination)
+inline void Graph<V, E>::Vertex::removeAllEdgesTo(v_const_iterator destination)
 {
   m_edges.erase(
     std::remove_if(m_edges.begin(), m_edges.end(),
@@ -403,6 +412,7 @@ template <typename V, typename E>
 Graph<V, E>::Graph(std::initializer_list<V> vertex_list)
   : Graph<V, E>()
 {
+  reserveVertexCapacity(vertex_list.size());
   for(const V& v : vertex_list)
     addVertex(v);
 }
@@ -411,6 +421,8 @@ template <typename V, typename E>
 Graph<V, E>::Graph(std::initializer_list<Edge> edge_list)
   : Graph<V, E>()
 {
+//   m_vertices.resize(edge_list.size());
+//   m_vertices.resize(2);
   for (const Edge& e : edge_list )
     addEdge(e.source, e.destination, e.weight);
 }
@@ -429,9 +441,10 @@ inline void Graph<V, E>::addVertex(const_reference data)
   if (find(data) != m_vertices.end())
     return;
 
-  Vertex v;
-  v.m_data = data;
-  m_vertices.push_back(v);
+  if (m_vertices.size() == m_vertices.capacity())
+    resizeVerticesVector();
+
+  m_vertices.push_back(Vertex(data));
 }
 
 template <typename V, typename E>
@@ -446,7 +459,7 @@ inline void Graph<V, E>::removeVertex(const_reference data)
                 { v.removeAllEdgesTo(it); } );
 
   m_vertices.erase(it);
-  adjustEdges(it);
+  adjustIteratorsAfter(it);
 }
 
 template <typename V, typename E>
@@ -474,9 +487,9 @@ inline void Graph<V, E>::removeEdge(const_reference source, const_reference dest
   if (destination_it == m_vertices.end())
     return;
 
-  source_it->removeEdge(destination, weight);
+  source_it->removeEdge(destination_it, weight);
   if (!m_directed)
-    destination_it->removeEdge(source, weight);
+    destination_it->removeEdge(source_it, weight);
 }
 
 template <typename V, typename E>
@@ -571,7 +584,7 @@ Graph<V, E>::find(const_reference data)
 }
 
 template <typename V, typename E>
-void Graph<V, E>::adjustEdges(v_iterator deleted_vit)
+void Graph<V, E>::adjustIteratorsAfter(v_iterator deleted_vit)
 {
   std::for_each(m_vertices.begin(), m_vertices.end(),
                 [&deleted_vit](Vertex& v)
@@ -581,5 +594,24 @@ void Graph<V, E>::adjustEdges(v_iterator deleted_vit)
                 });
 }
 
+template <typename V, typename E>
+void Graph<V, E>::resizeVerticesVector()
+{
+  const float grow_factor = 1.5;
+  const int old_size = m_vertices.size();
+  const int new_size = old_size == 0 ? 1 : old_size * grow_factor + 0.5;
+
+  std::vector<value_type> old_vertices = vertices();
+  std::vector<Edge> old_edges = edges();
+
+  clear();
+  reserveVertexCapacity(new_size);
+
+  for(auto v: old_vertices)
+    addVertex(v);
+
+  for(auto e: old_edges)
+    addEdge(e.source, e.destination, e.weight);
+}
 
 #endif // GRAPH_H

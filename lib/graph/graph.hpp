@@ -1,8 +1,8 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include <unordered_map>
 #include <vector>
-#include <list>
 #include <set>
 
 #include <algorithm>
@@ -25,51 +25,27 @@ public:
   typedef E weight_type;
   typedef const E& const_weight_reference;
 
-  class Edge;
   class vertex_iterator;
   class edge_iterator;
 
 private:
 
-  struct Vertex;
-  typedef std::vector<Vertex> v_container;
+  struct EdgeTo;
+  typedef std::unordered_map<V, std::vector<EdgeTo> > v_container;
   typedef typename v_container::iterator v_iterator;
   typedef typename v_container::const_iterator v_const_iterator;
 
   struct EdgeTo {
 
     EdgeTo() = delete;
-    EdgeTo(v_const_iterator destination, const_weight_reference weight = weight_type());
+    EdgeTo(v_iterator destination, const_weight_reference weight = weight_type());
     EdgeTo(const EdgeTo& o) : m_destination(o.m_destination), m_weight(o.m_weight) {}
     EdgeTo& operator=(EdgeTo o) { swap(o); return *this; }
     void swap(EdgeTo& o);
     bool operator==(const EdgeTo& o) const;
 
-    v_const_iterator m_destination;
+    v_iterator m_destination;
     weight_type m_weight;
-  };
-
-  struct Vertex {
-
-    Vertex(const_reference data) : m_data(data), m_edges() {}
-    Vertex() : m_data(), m_edges()  {}
-
-    Vertex(const Vertex& o) : m_data(o.m_data), m_edges(o.m_edges) {}
-    Vertex& operator=(Vertex o) { swap(o); return *this; }
-    void swap(Vertex& o) { std::swap(m_data, o.m_data); std::swap(m_edges, o.m_edges);}
-    bool operator==(const Vertex& o) const;
-
-    // parallell accumulate requires both
-    Vertex(size_type) : Vertex()  {}
-    explicit operator int() const { return (int)m_edges.size(); }
-
-    void addEdge(v_const_iterator destination, const_weight_reference weight = weight_type());
-    void removeEdge(v_const_iterator destination, const_weight_reference weight = weight_type());
-    void removeAllEdgesTo(v_const_iterator destination);
-    std::vector<Edge> edges() const;
-
-    value_type m_data;
-    std::list<EdgeTo> m_edges;
   };
 
 public:
@@ -115,7 +91,6 @@ public:
 
   /// @todo rename Vertex & Edge?
   // Modifiers
-  void reserveVertexCapacity(int c) { m_vertices.reserve(c); }
   void clear() { m_vertices.clear(); }
 
   void addVertex(const_reference data);
@@ -125,7 +100,7 @@ public:
   void removeEdges(const_reference source, const_reference destination);
 
   // Lookup
-  bool contains(const_reference data) const { return find(data) != m_vertices.end(); }
+  bool contains(const_reference data) const { return m_vertices.find(data) != m_vertices.end(); }
   std::vector<value_type> vertices() const;
   std::vector<value_type> neighboursOf(const_reference data) const;
   std::vector<weight_type> weights(const_reference source, const_reference destination) const;
@@ -153,8 +128,8 @@ public:
     reference_self_type operator=(self_type o) { swap(o); return *this; }
     void swap(reference_self_type o) { std::swap(m_it, o.m_it); }
 
-    const_reference operator*() { return m_it->m_data; }
-    const_pointer operator->() { return &m_it->m_data; }
+    const_reference operator*() { return m_it->first; }
+    const_pointer operator->() { return &m_it->first; }
     self_type &operator++() { ++m_it; return *this; }
     self_type operator++(int) { self_type tmp(*this); ++(*this); return tmp; }
     self_type operator+(difference_type n) { self_type tmp(*this); tmp.pos_ += n; return tmp; }
@@ -209,7 +184,7 @@ public:
 
     v_container m_vertices;
     v_iterator m_vertex_it;
-    typename std::list<EdgeTo>::iterator m_edge_it;
+    typename std::vector<EdgeTo>::iterator m_edge_it;
     Edge m_edge;
   };
 
@@ -219,14 +194,9 @@ public:
   const edge_iterator edge_end() const { return edge_iterator(m_vertices, false); }
 
 private:
-  v_const_iterator find(const_reference data) const;
-  v_iterator find(const_reference data);
-  v_const_iterator findAndCheck(const_reference data, bool existence_expected = true) const;
-  v_iterator findAndCheck(const_reference data, bool existence_expected = true);
 
-  /// @todo make is a vector specializetion
-  void adjustIteratorsAfter(v_iterator vit);
-  void resizeVerticesVector();
+  static void eraseEdge(typename std::vector<EdgeTo>& v, const_reference data);
+  static void eraseEdge(typename std::vector<EdgeTo>& v, const_reference data, const_weight_reference weight);
 
   const bool m_directed;
   v_container m_vertices;
@@ -298,7 +268,7 @@ inline Graph<V, E>::edge_iterator::edge_iterator(v_container vertices, bool begi
       ++m_vertex_it;
 
     if (m_vertex_it != m_vertices.end())
-      m_edge_it = m_vertex_it->m_edges.begin();
+      m_edge_it = m_vertex_it->second.begin();
   } else {
     m_vertex_it = m_vertices.end();
   }
@@ -307,10 +277,10 @@ inline Graph<V, E>::edge_iterator::edge_iterator(v_container vertices, bool begi
 template <typename V, typename E>
 inline void Graph<V, E>::edge_iterator::resetEdge()
 {
-  if (m_vertex_it == m_vertices.end() || (*m_vertex_it).m_edges.empty()) {
+  if (m_vertex_it == m_vertices.end() || m_vertex_it->second.empty()) {
     m_edge = Edge();
   } else {
-    m_edge = Edge( m_vertex_it->m_data, (m_edge_it->m_destination)->m_data, m_edge_it->m_weight);
+    m_edge = Edge( m_vertex_it->first, (m_edge_it->m_destination)->first, m_edge_it->m_weight);
   }
 }
 
@@ -318,7 +288,7 @@ template <typename V, typename E>
 void Graph<V, E>::edge_iterator::advance(int n)
 {
   while (n > 0 && m_vertex_it != m_vertices.end()) {
-    const int edgesAhead = std::distance(m_edge_it, m_vertex_it->m_edges.end()) - 1;
+    const int edgesAhead = std::distance(m_edge_it, m_vertex_it->second.end()) - 1;
     if (n <= edgesAhead) {
       std::advance(m_edge_it, n);
       return;
@@ -328,8 +298,8 @@ void Graph<V, E>::edge_iterator::advance(int n)
     ++m_vertex_it;
 
     if (m_vertex_it != m_vertices.end()) {
-      m_edge_it = m_vertex_it->m_edges.begin();
-      if (m_edge_it != m_vertex_it->m_edges.end())
+      m_edge_it = m_vertex_it->second.begin();
+      if (m_edge_it != m_vertex_it->second.end())
         --n;
     }
   }
@@ -337,7 +307,7 @@ void Graph<V, E>::edge_iterator::advance(int n)
 
 // EdgeTo
 template <typename V, typename E>
-inline Graph<V, E>::EdgeTo::EdgeTo(v_const_iterator destination, const_weight_reference weight)
+inline Graph<V, E>::EdgeTo::EdgeTo(v_iterator destination, const_weight_reference weight)
   : m_destination(destination)
   , m_weight(weight)
 {}
@@ -356,63 +326,12 @@ inline bool Graph<V, E>::EdgeTo::operator==(const EdgeTo& other) const
          m_weight == other.m_weight;
 }
 
-
-// Vertex
-
-template <typename V, typename E>
-inline bool Graph<V, E>::Vertex::operator==(const Vertex& other) const
-{
-  return m_data == other.m_data &&
-         m_edges.size() == other.m_edges.size() &&
-         m_edges == other.m_edges;
-}
-
-template <typename V, typename E>
-inline void Graph<V, E>::Vertex::addEdge(v_const_iterator destination, const_weight_reference weight)
-{
-  m_edges.push_back(EdgeTo(destination, weight));
-}
-
-template <typename V, typename E>
-inline void Graph<V, E>::Vertex::removeEdge(v_const_iterator destination, const_weight_reference weight)
-{
-  typename std::list<EdgeTo>::iterator it =
-    std::find_if(m_edges.begin(), m_edges.end(),
-                 [&destination, &weight](const EdgeTo& e)
-                 { return e.m_destination == destination && e.m_weight == weight;});
-
-  if (it != m_edges.end())
-    m_edges.erase(it);
-}
-
-template <typename V, typename E>
-inline void Graph<V, E>::Vertex::removeAllEdgesTo(v_const_iterator destination)
-{
-  m_edges.erase(
-    std::remove_if(m_edges.begin(), m_edges.end(),
-                  [&destination](const EdgeTo& e)
-                  { return e.m_destination == destination; }),
-    m_edges.end());
-}
-
-template <typename V, typename E>
-inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::Vertex::edges() const
-{
-  std::vector<Graph<V, E>::Edge> retval;
-  for (const EdgeTo& e : m_edges)
-    retval.push_back(Edge(m_data, (e.m_destination)->m_data, e.m_weight));
-
-  return retval;
-}
-
-
 // Graph
 
 template <typename V, typename E>
 Graph<V, E>::Graph(std::initializer_list<V> vertex_list)
   : Graph<V, E>()
 {
-  reserveVertexCapacity(vertex_list.size());
   for(const V& v : vertex_list)
     addVertex(v);
 }
@@ -421,8 +340,6 @@ template <typename V, typename E>
 Graph<V, E>::Graph(std::initializer_list<Edge> edge_list)
   : Graph<V, E>()
 {
-//   m_vertices.resize(edge_list.size());
-//   m_vertices.resize(2);
   for (const Edge& e : edge_list )
     addEdge(e.source, e.destination, e.weight);
 }
@@ -430,36 +347,38 @@ Graph<V, E>::Graph(std::initializer_list<Edge> edge_list)
 template <typename V, typename E>
 inline typename Graph<V, E>::size_type Graph<V, E>::numberOfEdges() const
 {
-  return std::accumulate(m_vertices.begin(), m_vertices.end(), 0,
-                         [](int sum, const Vertex& v)
-                         { return sum + v.m_edges.size(); });
+  int sum = 0;
+  for (const auto& v : m_vertices)
+    sum += v.second.size();
+
+  return sum;
 }
 
 template <typename V, typename E>
 inline void Graph<V, E>::addVertex(const_reference data)
 {
-  if (find(data) != m_vertices.end())
+  if (m_vertices.find(data) != m_vertices.end())
     return;
 
-  if (m_vertices.size() == m_vertices.capacity())
-    resizeVerticesVector();
-
-  m_vertices.push_back(Vertex(data));
+  std::pair<V, std::vector<Graph<V, E>::EdgeTo> > p(data, std::vector<EdgeTo>());
+  m_vertices.insert(p);
 }
 
 template <typename V, typename E>
 inline void Graph<V, E>::removeVertex(const_reference data)
 {
-  v_iterator it = find(data);
+  v_iterator it = m_vertices.find(data);
   if (it == m_vertices.end())
     return;
 
-  std::for_each(m_vertices.begin(), m_vertices.end(),
-                [&it] (Vertex& v)
-                { v.removeAllEdgesTo(it); } );
+  if (m_directed)
+    for (auto &v : m_vertices)
+        eraseEdge(v.second, data);
+  else
+    for (EdgeTo& n : it->second)
+      eraseEdge(n.m_destination->second, data);
 
   m_vertices.erase(it);
-  adjustIteratorsAfter(it);
 }
 
 template <typename V, typename E>
@@ -468,52 +387,52 @@ void Graph<V, E>::addEdge(const_reference source, const_reference destination, c
   addVertex(source);
   addVertex(destination);
 
-  v_iterator source_it = find(source);
-  v_iterator destination_it = find(destination);
+  v_iterator source_it = m_vertices.find(source);
+  v_iterator destination_it = m_vertices.find(destination);
 
-  source_it->addEdge(destination_it, weight);
+  source_it->second.push_back(Graph<V, E>::EdgeTo(destination_it, weight));
   if (!m_directed && source != destination)
-    destination_it->addEdge(source_it, weight);
+    destination_it->second.push_back(Graph<V, E>::EdgeTo(source_it, weight));
 }
 
 template <typename V, typename E>
 inline void Graph<V, E>::removeEdge(const_reference source, const_reference destination, const_weight_reference weight)
 {
-  v_iterator source_it = find(source);
+  v_iterator source_it = m_vertices.find(source);
   if (source_it == m_vertices.end())
     return;
 
-  v_iterator destination_it = find(destination);
+  v_iterator destination_it = m_vertices.find(destination);
   if (destination_it == m_vertices.end())
     return;
 
-  source_it->removeEdge(destination_it, weight);
+  eraseEdge(source_it->second, destination, weight);
   if (!m_directed)
-    destination_it->removeEdge(source_it, weight);
+    eraseEdge(destination_it->second, source, weight);
 }
 
 template <typename V, typename E>
 inline void Graph<V, E>::removeEdges(const_reference source, const_reference destination)
 {
-  v_iterator source_it = find(source);
+  v_iterator source_it = m_vertices.find(source);
   if (source_it == m_vertices.end())
     return;
 
-  v_iterator destination_it = find(destination);
+  v_iterator destination_it = m_vertices.find(destination);
   if (destination_it == m_vertices.end())
     return;
 
-  source_it->removeAllEdgesTo(destination_it);
+  eraseEdge(source_it->second, destination);
   if (!m_directed)
-    destination_it->removeAllEdgesTo(source_it);
+    eraseEdge(destination_it->second, source);
 }
 
 template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::value_type> Graph<V, E>::vertices() const
 {
   std::vector<value_type> retval;
-  for (const Vertex& v : m_vertices)
-    retval.push_back(v.m_data);
+  for (const auto& v : m_vertices)
+    retval.push_back(v.first);
 
   return retval;
 }
@@ -522,14 +441,14 @@ template <typename V, typename E>
 std::vector<typename Graph<V, E>::value_type> Graph<V, E>::neighboursOf(const_reference data) const
 {
   typename std::vector<value_type> retval;
-  v_const_iterator vertex_it = find(data);
-  if (vertex_it == m_vertices.end() || vertex_it->m_edges.empty())
+  v_const_iterator vertex_it = m_vertices.find(data);
+  if (vertex_it == m_vertices.end() || vertex_it->second.empty())
     return retval;
 
-  std::set<v_const_iterator> tmp;
-  for (const EdgeTo& e : vertex_it->m_edges)
-    if (tmp.insert(e.m_destination).second)
-      retval.push_back((e.m_destination)->m_data);
+  std::set<value_type> tmp;
+  for (const EdgeTo& e : vertex_it->second)
+    if (tmp.insert(e.m_destination->first).second)
+      retval.push_back(e.m_destination->first);
 
   return retval;
 }
@@ -538,15 +457,15 @@ template <typename V, typename E>
 std::vector<E> Graph<V, E>::weights(const_reference source, const_reference destination) const
 {
   std::vector<E> retval;
-  v_const_iterator vertex_it = find(source);
+  v_const_iterator vertex_it = m_vertices.find(source);
   if (vertex_it == m_vertices.end())
     return retval;
 
-  if (find(destination) == m_vertices.end())
+  if (m_vertices.find(destination) == m_vertices.end())
     return retval;
 
-  for (const EdgeTo& e : vertex_it->m_edges)
-    if (e.m_destination->m_data == destination)
+  for (const EdgeTo& e : vertex_it->second)
+    if (e.m_destination->first == destination)
       retval.push_back(e.m_weight);
 
   return retval;
@@ -556,62 +475,25 @@ template <typename V, typename E>
 inline std::vector<typename Graph<V, E>::Edge> Graph<V, E>::edges() const
 {
   std::vector<typename Graph<V, E>::Edge> retval;
-  for (const Vertex& v : m_vertices) {
-    const std::vector<Edge> e = v.edges();
-    retval.insert(retval.end(), e.begin(), e.end());
-  }
+  for (const auto& v : m_vertices)
+    for (const auto& e : v.second)
+      retval.push_back(Graph<V, E>::Edge(v.first, (e.m_destination)->first, e.m_weight));
 
   return retval;
 }
 
-
 template <typename V, typename E>
-inline typename Graph<V, E>::v_const_iterator
-Graph<V, E>::find(const_reference data) const
-{
-  return std::find_if(m_vertices.begin(), m_vertices.end(),
-                      [&data](const Vertex& v)
-                      { return v.m_data == data; });
+void Graph<V, E>::eraseEdge(typename std::vector<EdgeTo>& v, const_reference data) {
+  v.erase(std::remove_if(v.begin(), v.end(),
+                         [&data](const EdgeTo& e) { return e.m_destination->first == data; } ),
+          v.end());
 }
 
 template <typename V, typename E>
-inline typename Graph<V, E>::v_iterator
-Graph<V, E>::find(const_reference data)
-{
-  return std::find_if(m_vertices.begin(), m_vertices.end(),
-                      [&data](const Vertex& v)
-                      { return v.m_data == data; });
-}
-
-template <typename V, typename E>
-void Graph<V, E>::adjustIteratorsAfter(v_iterator deleted_vit)
-{
-  std::for_each(m_vertices.begin(), m_vertices.end(),
-                [&deleted_vit](Vertex& v)
-                { for (EdgeTo& e : v.m_edges)
-                    if (e.m_destination > deleted_vit)
-                      --e.m_destination;
-                });
-}
-
-template <typename V, typename E>
-void Graph<V, E>::resizeVerticesVector()
-{
-  const float grow_factor = 1.5;
-  const int old_size = m_vertices.size();
-  const int new_size = old_size == 0 ? 1 : old_size * grow_factor + 0.5;
-
-  std::vector<value_type> old_vertices = vertices();
-  std::vector<Edge> old_edges = edges();
-
-  clear();
-  reserveVertexCapacity(new_size);
-
-  for(auto v: old_vertices)
-    addVertex(v);
-
-  for(auto e: old_edges)
-    addEdge(e.source, e.destination, e.weight);
+void Graph<V, E>::eraseEdge(typename std::vector<EdgeTo>& v, const_reference data, const_weight_reference weight ) {
+    v.erase(std::remove_if(v.begin(), v.end(),
+                           [&data, &weight](const EdgeTo& e) { return e.m_destination->first == data && e.m_weight == weight; } ),
+            v.end());
 }
 
 #endif // GRAPH_H

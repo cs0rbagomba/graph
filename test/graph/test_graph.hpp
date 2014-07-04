@@ -1,6 +1,6 @@
 #include <cxxtest/TestSuite.h>
 
-#include <graph/graph.hpp>
+#include <graph/graphwd.hpp>
 
 // #include <graph/graph_algorithms.hpp>
 // #include <graph/mesh_algorithms.hpp>

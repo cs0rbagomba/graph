@@ -5,6 +5,6 @@ CMakeFiles/*
 Makefile
 build/*
 cmake_install.cmake
-graph
+# graph
 graph.kdev4
 libstdcxx-profile.*

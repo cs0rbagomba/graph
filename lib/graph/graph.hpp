@@ -26,7 +26,8 @@ public:
 
 private:
 
-  typedef std::unordered_map<V, std::vector<V> > v_container;
+  typedef std::vector<V> edge_container;
+  typedef std::unordered_map<V, edge_container> v_container;
   typedef typename v_container::iterator v_iterator;
   typedef typename v_container::const_iterator v_const_iterator;
 
@@ -62,6 +63,8 @@ public:
 
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
+  void modifyVertex(const_reference old_data, const_reference new_data);
+
   void addEdge(const_reference source, const_reference destination);
   void setEdges(const_reference source, const std::vector<value_type>& destinations);
   void removeEdge(const_reference source, const_reference destination);
@@ -120,7 +123,7 @@ public:
 
 private:
 
-  static void eraseEdge(typename std::vector<V>& v, const_reference data);
+  static void eraseEdge(edge_container& v, const_reference data);
 
   v_container m_vertices;
 };
@@ -160,7 +163,7 @@ inline void Graph<V>::addVertex(const_reference data)
   if (m_vertices.find(data) != m_vertices.end())
     return;
 
-  std::pair<V, std::vector<V> > p(data, std::vector<V>());
+  std::pair<V, edge_container> p(data, edge_container());
   m_vertices.insert(p);
 }
 
@@ -175,6 +178,24 @@ inline void Graph<V>::removeVertex(const_reference data)
     eraseEdge(v.second, data);
 
   m_vertices.erase(it);
+}
+
+template <typename V>
+inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new_data)
+{
+  v_iterator it = m_vertices.find(old_data);
+  if (it == m_vertices.end())
+    return;
+
+  std::vector<value_type> neighbours = neighboursOf(old_data);
+  for (auto &v : neighbours) {
+    std::vector<value_type>::iterator n_it = neighbours.find(old_data);
+    *it = new_data;
+  }
+
+  m_vertices.erase(it);
+  std::pair<V, edge_container> p(new_data, neighbours);
+  m_vertices.insert(p);
 }
 
 template <typename V>
@@ -197,7 +218,6 @@ inline void Graph<V>::setEdges(const_reference source, const std::vector<value_t
   v_iterator source_it = m_vertices.find(source);
 
   source_it->second.clear();
-  source_it->second.reserve(destinations.size()); // it is needed?
   source_it->second = destinations;
 }
 
@@ -248,7 +268,7 @@ inline std::vector<typename Graph<V>::Edge> Graph<V>::edges() const
 }
 
 template <typename V>
-inline void Graph<V>::eraseEdge(typename std::vector<V>& v, const_reference data) {
+inline void Graph<V>::eraseEdge(edge_container& v, const_reference data) {
   v.erase(std::remove(v.begin(), v.end()), v.end());
 }
 

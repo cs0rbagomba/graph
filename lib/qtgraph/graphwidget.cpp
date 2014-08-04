@@ -3,17 +3,41 @@
 #include "edge.hpp"
 #include "node.hpp"
 
-#include <QtGui>
+#include <graph/graph.hpp>
+#include "floats.hpp"
+
+#include <QtGui/QKeyEvent>
+#include <QtGui/QWheelEvent>
+#include <QtGui/QGraphicsScene>
+
+#include <QtGui/QApplication>
+
+#include <QtCore/QtGlobal>
 
 #include <math.h>
 
-GraphWidget::GraphWidget(QWidget *parent)
-    : QGraphicsView(parent), timerId(0)
+namespace std {
+  template <>
+  struct hash<float2>
+  {
+    std::size_t operator()(const float2& f2) const {
+      std::size_t h1 = std::hash<float>()(f2.x);
+      std::size_t h2 = std::hash<float>()(f2.y);
+      return h1 ^ (h2 << 1);
+    }
+  };
+}
+
+
+GraphWidget::GraphWidget(Graph<float2>* graph, QWidget *p)
+    : QGraphicsView(p)
+    , m_graph(graph)
 {
-    QGraphicsScene *scene = new QGraphicsScene(this);
-    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    scene->setSceneRect(-200, -200, 400, 400);
-    setScene(scene);
+    QGraphicsScene *s = new QGraphicsScene(this);
+    s->setItemIndexMethod(QGraphicsScene::NoIndex);
+    s->setSceneRect(-200, -200, 400, 400);
+    setScene(s);
+
     setCacheMode(CacheBackground);
     setViewportUpdateMode(BoundingRectViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
@@ -21,150 +45,78 @@ GraphWidget::GraphWidget(QWidget *parent)
     scale(qreal(0.8), qreal(0.8));
     setMinimumSize(400, 400);
     setWindowTitle(tr("Elastic Nodes"));
-
-    Node *node1 = new Node(this);
-    Node *node2 = new Node(this);
-    Node *node3 = new Node(this);
-    Node *node4 = new Node(this);
-    centerNode = new Node(this);
-    Node *node6 = new Node(this);
-    Node *node7 = new Node(this);
-    Node *node8 = new Node(this);
-    Node *node9 = new Node(this);
-    scene->addItem(node1);
-    scene->addItem(node2);
-    scene->addItem(node3);
-    scene->addItem(node4);
-    scene->addItem(centerNode);
-    scene->addItem(node6);
-    scene->addItem(node7);
-    scene->addItem(node8);
-    scene->addItem(node9);
-    scene->addItem(new Edge(node1, node2));
-    scene->addItem(new Edge(node2, node3));
-    scene->addItem(new Edge(node2, centerNode));
-    scene->addItem(new Edge(node3, node6));
-    scene->addItem(new Edge(node4, node1));
-    scene->addItem(new Edge(node4, centerNode));
-    scene->addItem(new Edge(centerNode, node6));
-    scene->addItem(new Edge(centerNode, node8));
-    scene->addItem(new Edge(node6, node9));
-    scene->addItem(new Edge(node7, node4));
-    scene->addItem(new Edge(node8, node7));
-    scene->addItem(new Edge(node9, node8));
-
-    node1->setPos(-50, -50);
-    node2->setPos(0, -50);
-    node3->setPos(50, -50);
-    node4->setPos(-50, 0);
-    centerNode->setPos(0, 0);
-    node6->setPos(50, 0);
-    node7->setPos(-50, 50);
-    node8->setPos(0, 50);
-    node9->setPos(50, 50);
 }
 
-void GraphWidget::itemMoved()
+void GraphWidget::itemMoved(const QPointF oldPos, const QPointF newPos)
 {
-    if (!timerId)
-        timerId = startTimer(1000 / 25);
+  float2 old_v = float2(oldPos.x(), oldPos.y());
+  float2 new_v = float2(newPos.x(), newPos.y());
+  m_graph->modifyVertex(old_v, new_v);
 }
 
-void GraphWidget::keyPressEvent(QKeyEvent *event)
+void GraphWidget::updateFromGraph()
 {
-    switch (event->key()) {
-    case Qt::Key_Up:
-        centerNode->moveBy(0, -20);
-        break;
-    case Qt::Key_Down:
-        centerNode->moveBy(0, 20);
-        break;
-    case Qt::Key_Left:
-        centerNode->moveBy(-20, 0);
-        break;
-    case Qt::Key_Right:
-        centerNode->moveBy(20, 0);
-        break;
+//   for (const auto cit : m_graph) {
+  for (Graph<float2>::iterator cit = m_graph->begin(); cit != m_graph->end(); ++cit) {
+    Node *node = new Node(this);
+    scene()->addItem(node);
+    node->setPos(cit->x, cit->y);
+  }
+
+//     for (const auto cit : g) {
+  for (Graph<float2>::iterator cit = m_graph->begin(); cit != m_graph->end(); ++cit) {
+    for (const auto cit2 : m_graph->neighboursOf(*cit)) {
+
+      float2 v = *cit;
+      Node* node1 = dynamic_cast<Node*>(scene()->itemAt(v.x, v.y)); /// @bug itemAt sometimes doesn't work
+      Q_CHECK_PTR(node1);
+
+      float2 v2 = cit2;
+      Node* node2 = dynamic_cast<Node*>(scene()->itemAt(v2.x, v2.y)); /// @bug itemAt sometimes doesn't work
+      Q_CHECK_PTR(node2);
+
+      scene()->addItem(new Edge(node1, node2));
+    }
+  }
+}
+
+void GraphWidget::keyPressEvent(QKeyEvent *e)
+{
+    switch (e->key()) {
     case Qt::Key_Plus:
         zoomIn();
         break;
     case Qt::Key_Minus:
         zoomOut();
         break;
-    case Qt::Key_Space:
-    case Qt::Key_Enter:
-        shuffle();
-        break;
     default:
-        QGraphicsView::keyPressEvent(event);
+        QGraphicsView::keyPressEvent(e);
     }
 }
 
-void GraphWidget::timerEvent(QTimerEvent *event)
+void GraphWidget::wheelEvent(QWheelEvent *e)
 {
-    Q_UNUSED(event);
-
-    QList<Node *> nodes;
-    foreach (QGraphicsItem *item, scene()->items()) {
-        if (Node *node = qgraphicsitem_cast<Node *>(item))
-            nodes << node;
-    }
-
-    foreach (Node *node, nodes)
-        node->calculateForces();
-
-    bool itemsMoved = false;
-    foreach (Node *node, nodes) {
-        if (node->advance())
-            itemsMoved = true;
-    }
-
-    if (!itemsMoved) {
-        killTimer(timerId);
-        timerId = 0;
-    }
+    scaleView(pow((double)2, -e->delta() / 240.0));
 }
 
-void GraphWidget::wheelEvent(QWheelEvent *event)
+void GraphWidget::drawBackground(QPainter *painter, const QRectF &r)
 {
-    scaleView(pow((double)2, -event->delta() / 240.0));
-}
-
-void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
-{
-    Q_UNUSED(rect);
-
     // Shadow
-    QRectF sceneRect = this->sceneRect();
-    QRectF rightShadow(sceneRect.right(), sceneRect.top() + 5, 5, sceneRect.height());
-    QRectF bottomShadow(sceneRect.left() + 5, sceneRect.bottom(), sceneRect.width(), 5);
-    if (rightShadow.intersects(rect) || rightShadow.contains(rect))
+    QRectF scene_rect = this->sceneRect();
+    QRectF rightShadow(scene_rect.right(), scene_rect.top() + 5, 5, scene_rect.height());
+    QRectF bottomShadow(scene_rect.left() + 5, scene_rect.bottom(), scene_rect.width(), 5);
+    if (rightShadow.intersects(r) || rightShadow.contains(r))
         painter->fillRect(rightShadow, Qt::darkGray);
-    if (bottomShadow.intersects(rect) || bottomShadow.contains(rect))
+    if (bottomShadow.intersects(r) || bottomShadow.contains(r))
         painter->fillRect(bottomShadow, Qt::darkGray);
 
     // Fill
-    QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
+    QLinearGradient gradient(scene_rect.topLeft(), scene_rect.bottomRight());
     gradient.setColorAt(0, Qt::white);
     gradient.setColorAt(1, Qt::lightGray);
-    painter->fillRect(rect.intersect(sceneRect), gradient);
+    painter->fillRect(r.intersect(scene_rect), gradient);
     painter->setBrush(Qt::NoBrush);
-    painter->drawRect(sceneRect);
-
-    // Text
-    QRectF textRect(sceneRect.left() + 4, sceneRect.top() + 4,
-                    sceneRect.width() - 4, sceneRect.height() - 4);
-    QString message(tr("Click and drag the nodes around, and zoom with the mouse "
-                       "wheel or the '+' and '-' keys"));
-
-    QFont font = painter->font();
-    font.setBold(true);
-    font.setPointSize(14);
-    painter->setFont(font);
-    painter->setPen(Qt::lightGray);
-    painter->drawText(textRect.translated(2, 2), message);
-    painter->setPen(Qt::black);
-    painter->drawText(textRect, message);
+    painter->drawRect(scene_rect);
 }
 
 void GraphWidget::scaleView(qreal scaleFactor)
@@ -176,14 +128,6 @@ void GraphWidget::scaleView(qreal scaleFactor)
     scale(scaleFactor, scaleFactor);
 }
 
-void GraphWidget::shuffle()
-{
-    foreach (QGraphicsItem *item, scene()->items()) {
-        if (qgraphicsitem_cast<Node *>(item))
-            item->setPos(-150 + qrand() % 300, -150 + qrand() % 300);
-    }
-}
-
 void GraphWidget::zoomIn()
 {
     scaleView(qreal(1.2));
@@ -192,4 +136,9 @@ void GraphWidget::zoomIn()
 void GraphWidget::zoomOut()
 {
     scaleView(1 / qreal(1.2));
+}
+
+void GraphWidget::quit()
+{
+  QApplication::quit();
 }

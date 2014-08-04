@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graph>
+<vertex pos="140.123  -109.877">
+  <edge>53.873  90.123</edge>
+  <edge>-161.127  -18.627</edge>
+  <edge>-29.877  -102.377</edge>
+</vertex>
+<vertex pos="-29.877  -102.377">
+  <edge>53.873  90.123</edge>
+  <edge>140.123  -109.877</edge>
+</vertex>
+<vertex pos="53.873  90.123">
+  <edge>-29.877  -102.377</edge>
+  <edge>140.123  -109.877</edge>
+</vertex>
+<vertex pos="-161.127  -18.627">
+  <edge>140.123  -109.877</edge>
+</vertex>
+</graph>

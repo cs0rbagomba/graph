@@ -123,6 +123,7 @@ public:
 
 private:
 
+  std::vector<value_type>& nonConstNeighboursOf(const_reference data);
   static void eraseEdge(edge_container& v, const_reference data);
 
   v_container m_vertices;
@@ -183,14 +184,18 @@ inline void Graph<V>::removeVertex(const_reference data)
 template <typename V>
 inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new_data)
 {
+  if (old_data == new_data)
+    return;
+
   v_iterator it = m_vertices.find(old_data);
   if (it == m_vertices.end())
     return;
 
   std::vector<value_type> neighbours = neighboursOf(old_data);
   for (auto &v : neighbours) {
-    std::vector<value_type>::iterator n_it = neighbours.find(old_data);
-    *it = new_data;
+    std::vector<value_type>& n_v = nonConstNeighboursOf(v);
+    typename std::vector<value_type>::iterator n_it = std::find(n_v.begin(), n_v.end(), old_data);
+    *n_it = new_data;
   }
 
   m_vertices.erase(it);
@@ -254,6 +259,13 @@ inline std::vector<V> Graph<V>::neighboursOf(const_reference data) const
     return std::vector<V>();
   else
     return vertex_it->second;
+}
+
+template <typename V>
+inline std::vector<V>& Graph<V>::nonConstNeighboursOf(const_reference data)
+{
+  v_iterator vertex_it = m_vertices.find(data);
+  return vertex_it->second;
 }
 
 template <typename V>

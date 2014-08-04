@@ -1,4 +1,4 @@
-#include <graph.hpp>
+#include "graph.hpp"
 
 #include <stdexcept>
 #include <fstream>
@@ -20,19 +20,24 @@ void readVertices(Graph<V>& g,  F vertexCreator, const xmlNodePtr root_element)
       std::vector<V> edges;
       for (xmlNodePtr cur_kid = cur_node->children; cur_kid; cur_kid = cur_kid->next)
         if (cur_kid->type == XML_ELEMENT_NODE && cur_kid->children->type == XML_TEXT_NODE) {
-          const std::string e( reinterpret_cast<const char*>(cur_kid->children->content));
-          edges.push_back(vertexCreator(e));
+          const std::string edge( reinterpret_cast<const char*>(cur_kid->children->content));
+          V e = vertexCreator(edge);
+          edges.push_back(e);
         }
-
       g.setEdges(v, edges);
     }
 }
 
 } // anonym namespace
 
+
 template <typename V, typename F>
 Graph<V> readGraphFromXML(const std::string& filename, F vertexCreator)
 {
+  std::ifstream file(filename);
+  if (!file.good())
+    throw std::runtime_error("Failed to open " + filename + " to read.");
+
   xmlDocPtr doc = xmlReadFile(filename.c_str(), NULL, 0);
   if (doc == NULL)
     throw std::runtime_error("Failed to parse " + filename);
@@ -64,7 +69,7 @@ void writeGraphToXML(const Graph<V>& g, const std::string& filename, F vertexSer
     file << "<vertex pos=\"" << v << "\">" << std::endl;
     for (const auto cit2 : g.neighboursOf(cit)) {
       const std::string n = vertexSerializer(cit2);
-      file << "  <edge>" << v << "</edge>" << std::endl;
+      file << "  <edge>" << n << "</edge>" << std::endl;
     }
     file << "</vertex>" << std::endl;
   }

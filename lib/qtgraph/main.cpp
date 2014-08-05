@@ -27,19 +27,19 @@ namespace std {
   };
 
   template <typename T>
-  std::string to_string_with_precision(const T a_value, const int n = 6)
+  inline std::string to_string_with_precision(const T a_value, const int n = 6)
   {
       std::ostringstream out;
       out << std::fixed << std::setprecision(n) << a_value;
       return out.str();
   }
-}
 
-// inline std::ostream& operator<< (std::ostream& os, const float2& f2)
-// {
-//   os << f2.x << "," << f2.y;
-//   return os;
-// }
+  inline std::ostream& operator<< (std::ostream& os, const float2& f2)
+  {
+    os << std::to_string_with_precision(f2);
+    return os;
+  }
+}
 
 float2 float2creator(const std::string& line)
 {
@@ -61,7 +61,8 @@ int main(int argc, char **argv)
   qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 
 
-  Graph<float2> g = readGraphFromXML<float2>("graph_example.xml", float2creator);
+  const std::string xml_file = "graph_example.xml";
+  Graph<float2> g = readGraphFromXML<float2>(xml_file, float2creator);
 
   GraphWidget *widget = new GraphWidget(&g);
   widget->updateFromGraph();
@@ -77,6 +78,6 @@ int main(int argc, char **argv)
   mainWindow.show();
   const int app_retval = app.exec();
 
-  writeGraphToXML<float2>(g, "graph_example.xml", float2serializer);
+  writeGraphToXML<float2>(g, xml_file, float2serializer);
   return app_retval;
 }

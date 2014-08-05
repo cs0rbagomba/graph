@@ -12,10 +12,6 @@
 
 #include <QtGui/QApplication>
 
-#include <QtCore/QtGlobal>
-
-#include <math.h>
-
 namespace std {
   template <>
   struct hash<float2>
@@ -26,6 +22,11 @@ namespace std {
       return h1 ^ (h2 << 1);
     }
   };
+}
+
+// for the map
+bool operator< (const float2& v1, const float2& v2) {
+  return length(v1) < length(v2);
 }
 
 
@@ -56,25 +57,19 @@ void GraphWidget::itemMoved(const QPointF oldPos, const QPointF newPos)
 
 void GraphWidget::updateFromGraph()
 {
-//   for (const auto cit : m_graph) {
+  // scene()->itemAt returns the topmost only which can be an Edge
+  QMap<float2, Node*> node_map;
   for (Graph<float2>::iterator cit = m_graph->begin(); cit != m_graph->end(); ++cit) {
     Node *node = new Node(this);
     scene()->addItem(node);
     node->setPos(cit->x, cit->y);
+    node_map.insert(*cit, node);
   }
 
-//     for (const auto cit : g) {
   for (Graph<float2>::iterator cit = m_graph->begin(); cit != m_graph->end(); ++cit) {
     for (const auto cit2 : m_graph->neighboursOf(*cit)) {
-
-      float2 v = *cit;
-      Node* node1 = dynamic_cast<Node*>(scene()->itemAt(v.x, v.y)); /// @bug itemAt sometimes doesn't work
-      Q_CHECK_PTR(node1);
-
-      float2 v2 = cit2;
-      Node* node2 = dynamic_cast<Node*>(scene()->itemAt(v2.x, v2.y)); /// @bug itemAt sometimes doesn't work
-      Q_CHECK_PTR(node2);
-
+      Node* node1 = node_map.find(*cit).value();
+      Node* node2 = node_map.find(cit2).value();
       scene()->addItem(new Edge(node1, node2));
     }
   }

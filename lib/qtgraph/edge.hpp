@@ -8,7 +8,15 @@ class Node;
 class Edge : public QGraphicsItem
 {
 public:
-    Edge(Node *sourceNode, Node *destNode);
+
+    enum ArrowStyle {
+      NoArrow,
+      ArrowToDestination,
+      ArrowToSource,
+      ArrowToBothSides
+    };
+
+    Edge(Node *source, Node *destination, ArrowStyle arrowStyle = NoArrow );
 
     Node *sourceNode() const;
     Node *destNode() const;
@@ -24,6 +32,7 @@ protected:
 
 private:
     Node *source, *dest;
+    ArrowStyle m_arrowStyle;
 
     QPointF sourcePoint;
     QPointF destPoint;

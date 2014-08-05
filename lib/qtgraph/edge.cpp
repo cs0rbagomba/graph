@@ -8,12 +8,13 @@
 static const double Pi = 3.14159265358979323846264338327950288419717;
 static double TwoPi = 2.0 * Pi;
 
-Edge::Edge(Node *sourceNode, Node *destNode)
-    : arrowSize(10)
+Edge::Edge(Node* s, Node* d, Edge::ArrowStyle arrowStyle  )
+    : m_arrowStyle(arrowStyle)
+    , arrowSize(10)
 {
     setAcceptedMouseButtons(0);
-    source = sourceNode;
-    dest = destNode;
+    source = s;
+    dest = d;
     source->addEdge(this);
     dest->addEdge(this);
     adjust();
@@ -67,7 +68,7 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     if (!source || !dest)
         return;
 
-    QLineF line(sourcePoint, destPoint);
+    const QLineF line(sourcePoint, destPoint);
     if (qFuzzyCompare(line.length(), qreal(0.)))
         return;
 
@@ -76,20 +77,24 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     painter->drawLine(line);
 
     // Draw the arrows
+    if (m_arrowStyle == NoArrow)
+      return;
+
     double angle = ::acos(line.dx() / line.length());
     if (line.dy() >= 0)
         angle = TwoPi - angle;
 
-    QPointF sourceArrowP1 = sourcePoint + QPointF(sin(angle + Pi / 3) * arrowSize,
-                                                  cos(angle + Pi / 3) * arrowSize);
-    QPointF sourceArrowP2 = sourcePoint + QPointF(sin(angle + Pi - Pi / 3) * arrowSize,
-                                                  cos(angle + Pi - Pi / 3) * arrowSize);
-    QPointF destArrowP1 = destPoint + QPointF(sin(angle - Pi / 3) * arrowSize,
-                                              cos(angle - Pi / 3) * arrowSize);
-    QPointF destArrowP2 = destPoint + QPointF(sin(angle - Pi + Pi / 3) * arrowSize,
-                                              cos(angle - Pi + Pi / 3) * arrowSize);
-
     painter->setBrush(Qt::black);
-    painter->drawPolygon(QPolygonF() << line.p1() << sourceArrowP1 << sourceArrowP2);
-    painter->drawPolygon(QPolygonF() << line.p2() << destArrowP1 << destArrowP2);
+
+    if (m_arrowStyle == ArrowToSource || m_arrowStyle == ArrowToBothSides) {
+      const QPointF sourceArrowP1 = sourcePoint + QPointF(sin(angle + Pi / 3) * arrowSize, cos(angle + Pi / 3) * arrowSize);
+      const QPointF sourceArrowP2 = sourcePoint + QPointF(sin(angle + Pi - Pi / 3) * arrowSize, cos(angle + Pi - Pi / 3) * arrowSize);
+      painter->drawPolygon(QPolygonF() << line.p1() << sourceArrowP1 << sourceArrowP2);
+    }
+
+    if (m_arrowStyle == ArrowToDestination || m_arrowStyle == ArrowToBothSides) {
+      const QPointF destArrowP1 = destPoint + QPointF(sin(angle - Pi / 3) * arrowSize, cos(angle - Pi / 3) * arrowSize);
+      const QPointF destArrowP2 = destPoint + QPointF(sin(angle - Pi + Pi / 3) * arrowSize, cos(angle - Pi + Pi / 3) * arrowSize);
+      painter->drawPolygon(QPolygonF() << line.p2() << destArrowP1 << destArrowP2);
+    }
 }

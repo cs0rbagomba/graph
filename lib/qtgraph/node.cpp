@@ -9,10 +9,11 @@
 
 
 Node::Node(GraphWidget *graphWidget)
-    : graph(graphWidget)
+    : m_graphWidget(graphWidget)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
+    setFlag(ItemIsSelectable);
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
 }
@@ -42,18 +43,18 @@ QPainterPath Node::shape() const
     return path;
 }
 
-void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
+void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem* /*option*/, QWidget *)
 {
     painter->setPen(Qt::NoPen);
     painter->setBrush(Qt::darkGray);
     painter->drawEllipse(-7, -7, 20, 20);
 
     QRadialGradient gradient(-3, -3, 10);
-    if (option->state & QStyle::State_Sunken) {
+    if (isSelected()) {
         gradient.setCenter(3, 3);
         gradient.setFocalPoint(3, 3);
-        gradient.setColorAt(1, QColor(Qt::yellow).light(120));
-        gradient.setColorAt(0, QColor(Qt::darkYellow).light(120));
+        gradient.setColorAt(0, Qt::red);
+        gradient.setColorAt(1, Qt::darkRed);
     } else {
         gradient.setColorAt(0, Qt::yellow);
         gradient.setColorAt(1, Qt::darkYellow);
@@ -73,7 +74,7 @@ QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
 
         const QPointF old_pos = pos();
         const QPointF new_pos = value.toPointF();
-        graph->itemMoved(old_pos, new_pos);
+        m_graphWidget->itemMoved(old_pos, new_pos);
         break;
       }
     default:

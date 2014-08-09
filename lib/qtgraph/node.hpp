@@ -32,7 +32,7 @@ protected:
 private:
   QList<Edge *> edgeList;
   QPointF newPos;
-  GraphWidget *graph;
+  GraphWidget *m_graphWidget;
 };
 
 #endif

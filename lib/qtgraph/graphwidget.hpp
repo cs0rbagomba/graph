@@ -15,6 +15,7 @@ public:
   GraphWidget(Graph<float2>* graph, QWidget *parent = 0);
 
   void itemMoved(const QPointF oldPos, const QPointF newPos);
+
   void updateFromGraph();
 
 public slots:

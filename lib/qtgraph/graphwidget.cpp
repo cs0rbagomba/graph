@@ -16,7 +16,8 @@ namespace std {
   template <>
   struct hash<float2>
   {
-    std::size_t operator()(const float2& f2) const {
+    std::size_t operator()(const float2& f2) const
+    {
       std::size_t h1 = std::hash<float>()(f2.x);
       std::size_t h2 = std::hash<float>()(f2.y);
       return h1 ^ (h2 << 1);
@@ -25,8 +26,14 @@ namespace std {
 }
 
 // for the map
-bool operator< (const float2& v1, const float2& v2) {
+bool operator< (const float2& v1, const float2& v2)
+{
   return length(v1) < length(v2);
+}
+
+float2 inline float2FromQPointF(const QPointF& p)
+{
+  return float2(p.x(), p.y());
 }
 
 
@@ -50,8 +57,8 @@ GraphWidget::GraphWidget(Graph<float2>* graph, QWidget *p)
 
 void GraphWidget::itemMoved(const QPointF oldPos, const QPointF newPos)
 {
-  float2 old_v = float2(oldPos.x(), oldPos.y());
-  float2 new_v = float2(newPos.x(), newPos.y());
+  float2 old_v = float2FromQPointF(oldPos);
+  float2 new_v = float2FromQPointF(newPos);
   m_graph->modifyVertex(old_v, new_v);
 }
 
@@ -84,6 +91,27 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
     case Qt::Key_Minus:
         zoomOut();
         break;
+    case Qt::Key_Insert: {
+      QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
+      if (selectedItems.isEmpty())
+        break;
+
+      QGraphicsItem* selectedItem = selectedItems.first();
+      Node* selectedNode = dynamic_cast<Node*>(selectedItem);
+
+      const QPoint global_p = QCursor::pos();
+      const QPoint widget_p = mapFromGlobal(global_p);
+      const QPointF scene_p = mapToScene(widget_p);
+
+      Node *node = new Node(this);
+      scene()->addItem(node);
+      node->setPos(scene_p.x(), scene_p.y());
+      scene()->addItem(new Edge(selectedNode, node));
+
+      const float2 source_pos = float2FromQPointF(selectedItem->pos());
+      const float2 destination_pos = float2FromQPointF(scene_p);
+      m_graph->addEdge(source_pos, destination_pos);
+    }
     default:
         QGraphicsView::keyPressEvent(e);
     }

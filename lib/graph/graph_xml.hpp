@@ -9,8 +9,9 @@
 namespace {
 
 template <typename V, typename F>
-void readVertices(Graph<V>& g,  F vertexCreator, const xmlNodePtr root_element)
+Graph<V> readVertices(F vertexCreator, const xmlNodePtr root_element)
 {
+  Graph<V> g;
   for (xmlNodePtr cur_node = root_element->children; cur_node; cur_node = cur_node->next)
     if (cur_node->type == XML_ELEMENT_NODE) {
 
@@ -26,6 +27,7 @@ void readVertices(Graph<V>& g,  F vertexCreator, const xmlNodePtr root_element)
         }
       g.setEdges(v, edges);
     }
+  return g;
 }
 
 } // anonym namespace
@@ -38,15 +40,14 @@ Graph<V> readGraphFromXML(const std::string& filename, F vertexCreator)
   if (!file.good())
     throw std::runtime_error("Failed to open " + filename + " to read.");
 
-  xmlDocPtr doc = xmlReadFile(filename.c_str(), NULL, 0);
+  const char* encoding = NULL;
+  const int options = 0;
+  const xmlDocPtr doc = xmlReadFile(filename.c_str(), encoding, options);
   if (doc == NULL)
     throw std::runtime_error("Failed to parse " + filename);
 
-  xmlNodePtr root_element = NULL;
-  root_element = xmlDocGetRootElement(doc);
-
-  Graph<V> g;
-  readVertices(g, vertexCreator, root_element);
+  const xmlNodePtr root_element = xmlDocGetRootElement(doc);
+  const Graph<V> g = readVertices<V>(vertexCreator, root_element);
 
   xmlFreeDoc(doc);
   xmlCleanupParser();

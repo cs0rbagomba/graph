@@ -25,16 +25,9 @@ void Node::addEdge(Edge *edge)
     edge->adjust();
 }
 
-void Node::removeEdge(Node* node)
+void Node::removeEdge(Edge* edge)
 {
-//   QMutableListIterator<Edge*> i(edgeList);
-//   while (i.hasNext())
-//     if (i.next()->sourceNode() == node || i.next()->destNode() == node)
-//       i.remove();
-
-  edgeList.erase(std::remove_if(edgeList.begin(), edgeList.end(),
-                                [node](Edge* e) { return e->sourceNode() == node || e->destNode() == node; }),
-                 edgeList.end());
+  edgeList.removeAll(edge);
 }
 
 QList<Edge *> Node::edges() const

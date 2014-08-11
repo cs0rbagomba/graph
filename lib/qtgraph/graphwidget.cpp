@@ -108,17 +108,43 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
         break;
 
       QGraphicsItem* selectedItem = selectedItems.first();
-      m_graph->removeVertex(float2FromQPointF(selectedItem->pos()));
-
       Node* selectedNode = dynamic_cast<Node*>(selectedItem);
-      QList<Edge *> edges_of_selected = selectedNode->edges();
-      for (Edge* edge : edges_of_selected) {
-        edge->sourceNode()->removeEdge(selectedNode);
-        edge->destNode()->removeEdge(selectedNode);
-        scene()->removeItem(edge);
-      }
 
-      scene()->removeItem(selectedItem);
+      const QPoint global_p = QCursor::pos();
+      const QPoint widget_p = mapFromGlobal(global_p);
+      const QPointF scene_p = mapToScene(widget_p);
+
+      /// @bug no hit deteced (hover works) on bottom right corner
+      QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
+      Node* node_under_mouse = dynamic_cast<Node*>(item_under_mouse);
+      if (node_under_mouse != 0 && node_under_mouse != selectedNode) { // remove edge
+        const float2 source_pos = float2FromQPointF(selectedItem->pos());
+        const float2 destination_pos = float2FromQPointF(node_under_mouse->pos());
+        if (!m_graph->connected(source_pos, destination_pos))
+          return;
+
+        m_graph->removeEdge(source_pos, destination_pos);
+        QList<Edge *> edges_of_selected = selectedNode->edges();
+        for (Edge* edge : edges_of_selected) {
+          if (edge->sourceNode() == node_under_mouse || edge->destNode() == node_under_mouse) {
+            selectedNode->removeEdge(edge);
+            node_under_mouse->removeEdge(edge);
+            scene()->removeItem(edge);
+            delete edge;
+            return;
+          }
+        }
+      } else { // remove node
+        m_graph->removeVertex(float2FromQPointF(selectedItem->pos()));
+        QList<Edge *> edges_of_selected = selectedNode->edges();
+        for (Edge* edge : edges_of_selected) {
+          edge->sourceNode()->removeEdge(edge);
+          edge->destNode()->removeEdge(edge);
+          scene()->removeItem(edge);
+          delete edge;
+        }
+        scene()->removeItem(selectedItem);
+      }
     }
     case Qt::Key_Insert: {
       QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
@@ -135,7 +161,7 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
       /// @bug no hit deteced (hover works) on bottom right corner
       QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
       Node* node_under_mouse = dynamic_cast<Node*>(item_under_mouse);
-      if (node_under_mouse != 0) { // insert Edge
+      if (node_under_mouse != 0 && node_under_mouse != selectedNode) { // insert Edge
 
         const float2 source_pos = float2FromQPointF(selectedItem->pos());
         const float2 destination_pos = float2FromQPointF(node_under_mouse->pos());

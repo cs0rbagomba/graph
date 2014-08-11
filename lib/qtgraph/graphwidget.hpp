@@ -31,6 +31,11 @@ protected:
   void scaleView(qreal scaleFactor);
 
 private:
+  void insertNode(Node* selectedNode, QPointF pos);
+  void removeNode(Node* selectedNode);
+  void insertEdge(Node* selectedNode, Node* nodeUnderMouse);
+  void removeEdge(Node* selectedNode, Node* nodeUnderMouse);
+
   Graph<float2>* m_graph;
 };
 

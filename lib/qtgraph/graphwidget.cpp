@@ -102,50 +102,7 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
         zoomOut();
         break;
 
-    case Qt::Key_Delete: {
-      QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
-      if (selectedItems.isEmpty())
-        break;
-
-      QGraphicsItem* selectedItem = selectedItems.first();
-      Node* selectedNode = dynamic_cast<Node*>(selectedItem);
-
-      const QPoint global_p = QCursor::pos();
-      const QPoint widget_p = mapFromGlobal(global_p);
-      const QPointF scene_p = mapToScene(widget_p);
-
-      /// @bug no hit deteced (hover works) on bottom right corner
-      QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
-      Node* node_under_mouse = dynamic_cast<Node*>(item_under_mouse);
-      if (node_under_mouse != 0 && node_under_mouse != selectedNode) { // remove edge
-        const float2 source_pos = float2FromQPointF(selectedItem->pos());
-        const float2 destination_pos = float2FromQPointF(node_under_mouse->pos());
-        if (!m_graph->connected(source_pos, destination_pos))
-          return;
-
-        m_graph->removeEdge(source_pos, destination_pos);
-        QList<Edge *> edges_of_selected = selectedNode->edges();
-        for (Edge* edge : edges_of_selected) {
-          if (edge->sourceNode() == node_under_mouse || edge->destNode() == node_under_mouse) {
-            selectedNode->removeEdge(edge);
-            node_under_mouse->removeEdge(edge);
-            scene()->removeItem(edge);
-            delete edge;
-            return;
-          }
-        }
-      } else { // remove node
-        m_graph->removeVertex(float2FromQPointF(selectedItem->pos()));
-        QList<Edge *> edges_of_selected = selectedNode->edges();
-        for (Edge* edge : edges_of_selected) {
-          edge->sourceNode()->removeEdge(edge);
-          edge->destNode()->removeEdge(edge);
-          scene()->removeItem(edge);
-          delete edge;
-        }
-        scene()->removeItem(selectedItem);
-      }
-    }
+    case Qt::Key_Delete:
     case Qt::Key_Insert: {
       QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
       if (selectedItems.isEmpty())
@@ -158,35 +115,84 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
       const QPoint widget_p = mapFromGlobal(global_p);
       const QPointF scene_p = mapToScene(widget_p);
 
-      /// @bug no hit deteced (hover works) on bottom right corner
       QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
-      Node* node_under_mouse = dynamic_cast<Node*>(item_under_mouse);
-      if (node_under_mouse != 0 && node_under_mouse != selectedNode) { // insert Edge
+      Node* nodeUnderMouse = dynamic_cast<Node*>(item_under_mouse);
 
-        const float2 source_pos = float2FromQPointF(selectedItem->pos());
-        const float2 destination_pos = float2FromQPointF(node_under_mouse->pos());
-        if (m_graph->connected(source_pos, destination_pos))
-          return;
-
-        scene()->addItem(new Edge(selectedNode, node_under_mouse));
-        m_graph->addEdge(source_pos, destination_pos);
-      } else { // insert new node
-        Node *node = new Node(this);
-        scene()->addItem(node);
-        node->setPos(scene_p.x(), scene_p.y());
-        scene()->addItem(new Edge(selectedNode, node));
-
-        const float2 source_pos = float2FromQPointF(selectedItem->pos());
-        const float2 destination_pos = float2FromQPointF(scene_p);
-        m_graph->addEdge(source_pos, destination_pos);
-
-        selectedItem->setSelected(false);
-        node->setSelected(true);
+      if (nodeUnderMouse != 0 && nodeUnderMouse != selectedNode) {
+        if (e->key() == Qt::Key_Delete)
+          removeEdge(selectedNode, nodeUnderMouse);
+        else
+          insertEdge(selectedNode, nodeUnderMouse);
+      } else {
+        if (e->key() == Qt::Key_Delete)
+          removeNode(selectedNode);
+        else
+          insertNode(selectedNode, scene_p);
       }
     }
     default:
         QGraphicsView::keyPressEvent(e);
     }
+}
+
+void GraphWidget::removeEdge(Node* selectedNode, Node* nodeUnderMouse)
+{
+  const float2 source_pos = float2FromQPointF(selectedNode->pos());
+  const float2 destination_pos = float2FromQPointF(nodeUnderMouse->pos());
+  if (!m_graph->connected(source_pos, destination_pos))
+    return;
+
+  m_graph->removeEdge(source_pos, destination_pos);
+  QList<Edge *> edges_of_selected = selectedNode->edges();
+  for (Edge* edge : edges_of_selected) {
+    if (edge->sourceNode() == nodeUnderMouse || edge->destNode() == nodeUnderMouse) {
+      selectedNode->removeEdge(edge);
+      nodeUnderMouse->removeEdge(edge);
+      scene()->removeItem(edge);
+      delete edge;
+      return;
+    }
+  }
+}
+
+void GraphWidget::removeNode(Node* selectedNode)
+{
+  m_graph->removeVertex(float2FromQPointF(selectedNode->pos()));
+  QList<Edge *> edges_of_selected = selectedNode->edges();
+  for (Edge* edge : edges_of_selected) {
+    edge->sourceNode()->removeEdge(edge);
+    edge->destNode()->removeEdge(edge);
+    scene()->removeItem(edge);
+    delete edge;
+  }
+  scene()->removeItem(selectedNode);
+}
+
+void GraphWidget::insertEdge(Node* selectedNode, Node* nodeUnderMouse)
+{
+  const float2 source_pos = float2FromQPointF(selectedNode->pos());
+  const float2 destination_pos = float2FromQPointF(selectedNode->pos());
+  if (m_graph->connected(source_pos, destination_pos))
+    return;
+
+  scene()->addItem(new Edge(selectedNode, nodeUnderMouse));
+  m_graph->addEdge(source_pos, destination_pos);
+}
+
+
+void GraphWidget::insertNode(Node* selectedNode, QPointF scene_p)
+{
+  Node *node = new Node(this);
+  scene()->addItem(node);
+  node->setPos(scene_p.x(), scene_p.y());
+  scene()->addItem(new Edge(selectedNode, node));
+
+  const float2 source_pos = float2FromQPointF(selectedNode->pos());
+  const float2 destination_pos = float2FromQPointF(scene_p);
+  m_graph->addEdge(source_pos, destination_pos);
+
+  selectedNode->setSelected(false);
+  node->setSelected(true);
 }
 
 void GraphWidget::wheelEvent(QWheelEvent *e)

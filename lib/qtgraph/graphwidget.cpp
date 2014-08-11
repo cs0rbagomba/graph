@@ -12,6 +12,8 @@
 
 #include <QtGui/QApplication>
 
+#include <QtCore/QDebug>
+
 namespace std {
   template <>
   struct hash<float2>
@@ -25,16 +27,25 @@ namespace std {
   };
 }
 
+namespace {
+
 // for the map
-bool operator< (const float2& v1, const float2& v2)
-{
-  return length(v1) < length(v2);
-}
+// bool operator< (const float2& v1, const float2& v2)
+// {
+//   return length(v1) < length(v2);
+// }
 
 float2 inline float2FromQPointF(const QPointF& p)
 {
   return float2(p.x(), p.y());
 }
+
+QPointF inline QPointFFromfloat2(const float2& f)
+{
+  return QPointF(f.x, f.y);
+}
+
+} // anonym namespace
 
 
 GraphWidget::GraphWidget(Graph<float2>* graph, QWidget *p)
@@ -59,24 +70,23 @@ void GraphWidget::itemMoved(const QPointF oldPos, const QPointF newPos)
 {
   float2 old_v = float2FromQPointF(oldPos);
   float2 new_v = float2FromQPointF(newPos);
+
+  // if old_pos not found, returns silently
   m_graph->modifyVertex(old_v, new_v);
 }
 
 void GraphWidget::updateFromGraph()
 {
-  // scene()->itemAt returns the topmost only which can be an Edge
-  QMap<float2, Node*> node_map;
   for (Graph<float2>::iterator cit = m_graph->begin(); cit != m_graph->end(); ++cit) {
     Node *node = new Node(this);
     scene()->addItem(node);
-    node->setPos(cit->x, cit->y);
-    node_map.insert(*cit, node);
+    node->setPos(QPointFFromfloat2(*cit));
   }
 
   for (Graph<float2>::iterator cit = m_graph->begin(); cit != m_graph->end(); ++cit) {
     for (const auto cit2 : m_graph->neighboursOf(*cit)) {
-      Node* node1 = node_map.find(*cit).value();
-      Node* node2 = node_map.find(cit2).value();
+      Node* node1 = dynamic_cast<Node*>(scene()->itemAt(QPointFFromfloat2(*cit)));
+      Node* node2 = dynamic_cast<Node*>(scene()->itemAt(QPointFFromfloat2(cit2)));
       scene()->addItem(new Edge(node1, node2));
     }
   }
@@ -91,6 +101,25 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
     case Qt::Key_Minus:
         zoomOut();
         break;
+
+    case Qt::Key_Delete: {
+      QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
+      if (selectedItems.isEmpty())
+        break;
+
+      QGraphicsItem* selectedItem = selectedItems.first();
+      m_graph->removeVertex(float2FromQPointF(selectedItem->pos()));
+
+      Node* selectedNode = dynamic_cast<Node*>(selectedItem);
+      QList<Edge *> edges_of_selected = selectedNode->edges();
+      for (Edge* edge : edges_of_selected) {
+        edge->sourceNode()->removeEdge(selectedNode);
+        edge->destNode()->removeEdge(selectedNode);
+        scene()->removeItem(edge);
+      }
+
+      scene()->removeItem(selectedItem);
+    }
     case Qt::Key_Insert: {
       QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
       if (selectedItems.isEmpty())
@@ -103,14 +132,31 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
       const QPoint widget_p = mapFromGlobal(global_p);
       const QPointF scene_p = mapToScene(widget_p);
 
-      Node *node = new Node(this);
-      scene()->addItem(node);
-      node->setPos(scene_p.x(), scene_p.y());
-      scene()->addItem(new Edge(selectedNode, node));
+      /// @bug no hit deteced (hover works) on bottom right corner
+      QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
+      Node* node_under_mouse = dynamic_cast<Node*>(item_under_mouse);
+      if (node_under_mouse != 0) { // insert Edge
 
-      const float2 source_pos = float2FromQPointF(selectedItem->pos());
-      const float2 destination_pos = float2FromQPointF(scene_p);
-      m_graph->addEdge(source_pos, destination_pos);
+        const float2 source_pos = float2FromQPointF(selectedItem->pos());
+        const float2 destination_pos = float2FromQPointF(node_under_mouse->pos());
+        if (m_graph->connected(source_pos, destination_pos))
+          return;
+
+        scene()->addItem(new Edge(selectedNode, node_under_mouse));
+        m_graph->addEdge(source_pos, destination_pos);
+      } else { // insert new node
+        Node *node = new Node(this);
+        scene()->addItem(node);
+        node->setPos(scene_p.x(), scene_p.y());
+        scene()->addItem(new Edge(selectedNode, node));
+
+        const float2 source_pos = float2FromQPointF(selectedItem->pos());
+        const float2 destination_pos = float2FromQPointF(scene_p);
+        m_graph->addEdge(source_pos, destination_pos);
+
+        selectedItem->setSelected(false);
+        node->setSelected(true);
+      }
     }
     default:
         QGraphicsView::keyPressEvent(e);

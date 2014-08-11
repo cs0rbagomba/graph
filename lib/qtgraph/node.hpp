@@ -14,20 +14,20 @@ public:
   Node(GraphWidget *graphWidget);
 
   void addEdge(Edge *edge);
+  void removeEdge(Node* node);
   QList<Edge *> edges() const;
 
   enum { Type = UserType + 1 };
-  int type() const { return Type; }
+  int type() const override { return Type; }
 
-  QRectF boundingRect() const;
-  QPainterPath shape() const;
-  void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+  QRectF boundingRect() const override;
+  QPainterPath shape() const override;
+  void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 protected:
-  QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-
-  void mousePressEvent(QGraphicsSceneMouseEvent *event);
-  void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+  QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
 private:
   QList<Edge *> edgeList;

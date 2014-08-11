@@ -14,14 +14,27 @@ Node::Node(GraphWidget *graphWidget)
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemIsSelectable);
+    setAcceptHoverEvents(true);
     setCacheMode(DeviceCoordinateCache);
-    setZValue(-1);
+    setZValue(1); // higher than the edge
 }
 
 void Node::addEdge(Edge *edge)
 {
     edgeList << edge;
     edge->adjust();
+}
+
+void Node::removeEdge(Node* node)
+{
+//   QMutableListIterator<Edge*> i(edgeList);
+//   while (i.hasNext())
+//     if (i.next()->sourceNode() == node || i.next()->destNode() == node)
+//       i.remove();
+
+  edgeList.erase(std::remove_if(edgeList.begin(), edgeList.end(),
+                                [node](Edge* e) { return e->sourceNode() == node || e->destNode() == node; }),
+                 edgeList.end());
 }
 
 QList<Edge *> Node::edges() const
@@ -43,24 +56,23 @@ QPainterPath Node::shape() const
     return path;
 }
 
-void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem* /*option*/, QWidget *)
+void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget *)
 {
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(Qt::darkGray);
-    painter->drawEllipse(-7, -7, 20, 20);
-
     QRadialGradient gradient(-3, -3, 10);
     if (isSelected()) {
-        gradient.setCenter(3, 3);
-        gradient.setFocalPoint(3, 3);
-        gradient.setColorAt(0, Qt::red);
-        gradient.setColorAt(1, Qt::darkRed);
+      gradient.setCenter(3, 3);
+      gradient.setFocalPoint(3, 3);
+      gradient.setColorAt(0, Qt::red);
+      gradient.setColorAt(1, Qt::darkRed);
+    } else if (option->state & QStyle::State_MouseOver) {
+      gradient.setColorAt(0, Qt::green);
+      gradient.setColorAt(1, Qt::darkGreen);
     } else {
-        gradient.setColorAt(0, Qt::yellow);
-        gradient.setColorAt(1, Qt::darkYellow);
+      gradient.setColorAt(0, Qt::yellow);
+      gradient.setColorAt(1, Qt::darkYellow);
     }
-    painter->setBrush(gradient);
 
+    painter->setBrush(gradient);
     painter->setPen(QPen(Qt::black, 0));
     painter->drawEllipse(-10, -10, 20, 20);
 }

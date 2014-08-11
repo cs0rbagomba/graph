@@ -72,6 +72,7 @@ public:
   // Lookup
   bool contains(const_reference data) const { return m_vertices.find(data) != m_vertices.end(); }
   std::vector<value_type> vertices() const;
+  bool connected(const_reference source, const_reference destination) const;
   std::vector<value_type> neighboursOf(const_reference data) const;
   std::vector<Edge> edges() const;
 
@@ -252,6 +253,13 @@ inline std::vector<typename Graph<V>::value_type> Graph<V>::vertices() const
 }
 
 template <typename V>
+inline bool Graph<V>::connected(const_reference source, const_reference destination) const
+{
+  std::vector<V> neightbours = neighboursOf(source);
+  return std::find(neightbours.begin(), neightbours.end(), destination) != neightbours.end();
+}
+
+template <typename V>
 inline std::vector<V> Graph<V>::neighboursOf(const_reference data) const
 {
   v_const_iterator vertex_it = m_vertices.find(data);
@@ -281,7 +289,9 @@ inline std::vector<typename Graph<V>::Edge> Graph<V>::edges() const
 
 template <typename V>
 inline void Graph<V>::eraseEdge(edge_container& v, const_reference data) {
-  v.erase(std::remove(v.begin(), v.end()), v.end());
+  v.erase(std::remove_if(v.begin(), v.end(),
+                         [&data](const_reference d) { return d == data; }),
+          v.end());
 }
 
 

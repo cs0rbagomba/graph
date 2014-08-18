@@ -129,6 +129,7 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
         else
           insertNode(selectedNode, scene_p);
       }
+      break;
     }
     default:
         QGraphicsView::keyPressEvent(e);
@@ -171,7 +172,7 @@ void GraphWidget::removeNode(Node* selectedNode)
 void GraphWidget::insertEdge(Node* selectedNode, Node* nodeUnderMouse)
 {
   const float2 source_pos = float2FromQPointF(selectedNode->pos());
-  const float2 destination_pos = float2FromQPointF(selectedNode->pos());
+  const float2 destination_pos = float2FromQPointF(nodeUnderMouse->pos());
   if (m_graph->connected(source_pos, destination_pos))
     return;
 

@@ -21,6 +21,9 @@ public:
     Node *sourceNode() const;
     Node *destNode() const;
 
+    bool isRoute() const { return m_isRoute; }
+    void setIsRoute(bool is_route = true) { m_isRoute = is_route; update(); }
+
     void adjust();
 
     enum { Type = UserType + 2 };
@@ -37,6 +40,7 @@ private:
     QPointF sourcePoint;
     QPointF destPoint;
     qreal arrowSize;
+    bool m_isRoute;
 };
 
 #endif

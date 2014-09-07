@@ -2,8 +2,6 @@
 #include <QtGui/QMainWindow>
 #include <QtGui/QMenuBar>
 
-#include <QtCore/QTime>
-
 #include <graph/graph.hpp>
 #include <graph/graph_xml.hpp>
 
@@ -52,14 +50,31 @@ float2 float2creator(const std::string& line)
 inline std::string float2serializer(const float2& f2)
 {
   return std::to_string_with_precision(f2.x, 3) + "  " +  std::to_string_with_precision(f2.y, 3);
+
 }
+
+// https://stackoverflow.com/questions/13878373/where-am-i-supposed-to-reimplement-qapplicationnotify-function
+class SafeQApplication : public QApplication
+{
+public:
+    SafeQApplication(int &argCounter, char ** argVector) : QApplication(argCounter, argVector) {}
+private:
+    bool notify(QObject *receiver_, QEvent *event_)
+    {
+      try {
+        return QApplication::notify(receiver_, event_);
+      } catch (std::exception &ex) {
+        std::cerr << "std::exception was caught " << ex.what() << std::endl;
+      }
+      return false;
+    }
+};
+
 
 
 int main(int argc, char **argv)
 {
-  QApplication app(argc, argv);
-  qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
-
+  SafeQApplication app(argc, argv);
 
   const std::string xml_file = "graph_example.xml";
   Graph<float2> g = readGraphFromXML<float2>(xml_file, float2creator);

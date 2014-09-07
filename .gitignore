@@ -8,3 +8,4 @@ cmake_install.cmake
 # graph
 graph.kdev4
 libstdcxx-profile.*
+*.xml

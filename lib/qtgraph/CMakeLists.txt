@@ -1,8 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (PROJECT_QGRAPH)
 
-set ( CMAKE_CXX_COMPILER "/usr/bin/g++-4.9.0")
-
 set (CXX_FLAGS "-Wall -Wextra -pedantic -Wshadow "
                "-Wpointer-arith -Wcast-qual "
                "-ggdb "

@@ -4,6 +4,7 @@
 #include "node.hpp"
 
 #include <graph/graph.hpp>
+#include <graph/graph_algorithms.hpp>
 #include "floats.hpp"
 
 #include <QtGui/QKeyEvent>
@@ -12,7 +13,7 @@
 
 #include <QtGui/QApplication>
 
-#include <QtCore/QDebug>
+#include <functional>
 
 namespace std {
   template <>
@@ -25,6 +26,15 @@ namespace std {
       return h1 ^ (h2 << 1);
     }
   };
+
+  class distanceOf2float2s : public std::function<float(float2, float2)>
+  {
+  public:
+    float operator()(float2 a, float2 b)
+    {
+      return dist(a, b);
+    }
+  };
 }
 
 namespace {
@@ -35,6 +45,8 @@ namespace {
 //   return length(v1) < length(v2);
 // }
 
+
+
 float2 inline float2FromQPointF(const QPointF& p)
 {
   return float2(p.x(), p.y());
@@ -43,6 +55,40 @@ float2 inline float2FromQPointF(const QPointF& p)
 QPointF inline QPointFFromfloat2(const float2& f)
 {
   return QPointF(f.x, f.y);
+}
+
+inline float dist(const float2& v1, const float2& v2)
+{
+  return sqrt(pow((v2.x - v1.x),2) + pow((v2.y - v1.y),2));
+}
+
+QList<Edge*> calculateShortestRoute(const QGraphicsScene* scene,
+                                       const Graph<float2>* graph,
+                                       const Node* source,
+                                       const Node* destination)
+{
+
+  const float2 s = float2FromQPointF(source->pos());
+  const float2 d = float2FromQPointF(destination->pos());
+  const std::vector<float2> shortestPath = dijkstra_shortest_path_to<float2, float>(*graph, s, d, std::distanceOf2float2s());
+
+  QList<Edge*> route;
+  const int lenghtOfRoute = shortestPath.size();
+  if (lenghtOfRoute < 2)
+    return route;
+
+  for (int i = 0; i < lenghtOfRoute; ++i) {
+    if (i+1 == lenghtOfRoute)
+      break;
+
+    QGraphicsItem* source_item = scene->itemAt(QPointFFromfloat2(shortestPath[i]));
+    QGraphicsItem* destination_item = scene->itemAt(QPointFFromfloat2(shortestPath[i+1]));
+    Node* source_node = dynamic_cast<Node*>(source_item);
+    Node* destination_node = dynamic_cast<Node*>(destination_item);
+    Edge* e = source_node->edgeTo(destination_node);
+    route.append(e);
+  }
+  return route;
 }
 
 } // anonym namespace
@@ -130,6 +176,30 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
           insertNode(selectedNode, scene_p);
       }
       break;
+    }
+    case Qt::Key_Space: {
+      for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
+        (*it)->setIsRoute(false);
+
+      QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
+      if (selectedItems.isEmpty())
+        break;
+
+      QGraphicsItem* selectedItem = selectedItems.first();
+      Node* selectedNode = dynamic_cast<Node*>(selectedItem);
+
+      const QPoint global_p = QCursor::pos();
+      const QPoint widget_p = mapFromGlobal(global_p);
+      const QPointF scene_p = mapToScene(widget_p);
+
+      QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
+      Node* nodeUnderMouse = dynamic_cast<Node*>(item_under_mouse);
+
+      if (nodeUnderMouse != 0 && nodeUnderMouse != selectedNode) {
+        m_route = calculateShortestRoute(scene(), m_graph, selectedNode, nodeUnderMouse);
+        for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
+          (*it)->setIsRoute(true);
+      }
     }
     default:
         QGraphicsView::keyPressEvent(e);

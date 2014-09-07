@@ -11,6 +11,7 @@ static double TwoPi = 2.0 * Pi;
 Edge::Edge(Node* s, Node* d, Edge::ArrowStyle arrowStyle  )
     : m_arrowStyle(arrowStyle)
     , arrowSize(10)
+    , m_isRoute(false)
 {
     setAcceptedMouseButtons(0);
     source = s;
@@ -73,7 +74,11 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
         return;
 
     // Draw the line itself
-    painter->setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    if (m_isRoute)
+      painter->setPen(QPen(Qt::red, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    else
+      painter->setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+
     painter->drawLine(line);
 
     // Draw the arrows

@@ -35,6 +35,17 @@ QList<Edge *> Node::edges() const
     return edgeList;
 }
 
+Edge* Node::edgeTo(const Node* n) const
+{
+  for (int i = 0; i < edgeList.size(); ++i) {
+    Edge* e = edgeList.at(i);
+     if (e->destNode() == n)
+       return e;
+  }
+  return 0;
+}
+
+
 QRectF Node::boundingRect() const
 {
     qreal adjust = 2;

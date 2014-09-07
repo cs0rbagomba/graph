@@ -16,6 +16,7 @@ public:
   void addEdge(Edge *edge);
   void removeEdge(Edge* edge);
   QList<Edge *> edges() const;
+  Edge* edgeTo(const Node* n) const;
 
   enum { Type = UserType + 1 };
   int type() const override { return Type; }
@@ -31,7 +32,6 @@ protected:
 
 private:
   QList<Edge *> edgeList;
-  QPointF newPos;
   GraphWidget *m_graphWidget;
 };
 

@@ -6,6 +6,7 @@
 class float2;
 template<class T> class Graph;
 class Node;
+class Edge;
 
 class GraphWidget : public QGraphicsView
 {
@@ -37,6 +38,7 @@ private:
   void removeEdge(Node* selectedNode, Node* nodeUnderMouse);
 
   Graph<float2>* m_graph;
+  QList<Edge*> m_route;
 };
 
 #endif

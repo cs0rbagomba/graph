@@ -1,27 +1,22 @@
-#include <graph.hpp>
+#ifndef GRAPH_ALGORITHMS_HPP
+#define GRAPH_ALGORITHMS_HPP
+
+#include "graph.hpp"
 
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
 
+#include <utility>
 #include <algorithm>
+#include <functional>
 
 
 namespace {
 
-template <typename G>
-inline typename G::weight_type min_dist_between(const G& graph,
-                                         typename G::const_reference destination,
-                                         typename G::const_reference source)
-{
-  const std::vector<typename G::weight_type>& ws = graph.weights(destination, source);
-  const typename std::vector<typename G::weight_type>::const_iterator it = std::min_element(ws.begin(), ws.end());
-  return *it;
-}
-
 template <typename V, typename W>
-inline V smallest_distance_to_graph(const std::unordered_set<V>& q, const std::unordered_map<V, W>& dist)
+inline V closestNode(const std::unordered_set<V>& q, const std::unordered_map<V, W>& dist)
 {
   const typename std::unordered_set<V>::const_iterator smallest_it =
     std::min_element(q.begin(), q.end(),
@@ -31,14 +26,17 @@ inline V smallest_distance_to_graph(const std::unordered_set<V>& q, const std::u
   return *smallest_it;
 }
 
-template <typename V, typename W>
+template <typename V>
 std::vector<V> pathFromPrevList(const V& dest, std::unordered_map<V, V> prev)
 {
   std::vector<V> retval;
 
   retval.push_back(dest);
-  for (V it = dest; prev.find(it) != prev.end() ; it = prev.at(it))
-    retval.push_back(prev[it]);
+  for (V it = dest; prev.find(it) != prev.end() ; /*it = prev.at(it)*/) {
+    V v = prev.at(it);
+    retval.push_back(v);
+    it = v;
+  }
 
   std::reverse(retval.begin(), retval.end());
   return retval;
@@ -47,93 +45,18 @@ std::vector<V> pathFromPrevList(const V& dest, std::unordered_map<V, V> prev)
 } // anonym namespace
 
 
-
-// template <typename G>
-// std::pair <std::unordered_map<typename G::value_type, typename G::weight_type>,
-//            std::unordered_map<typename G::value_type, typename G::value_type> >
-// dijkstra_shortest_path(const G& graph, typename G::const_reference source)
-// {
-//   typedef typename G::value_type V;
-//   typedef typename G::weight_type W;
-//
-//   std::unordered_map<V, W> dist; /// @todo -> std::map < W, V > ?
-//   std::unordered_map<V, V> prev;
-//
-//   dist[source] = V();
-//
-//   std::unordered_set<V> q;
-//   for (const V& v : graph.vertices())
-//     q.insert(v);
-//
-//   while (!q.empty()) {
-//     const V& u = smallest_distance_to_graph<V, W>(q, dist);
-//     q.erase(u);
-//     if (dist.find(u) == dist.end())
-//       continue;
-//
-//     for (V v : graph.neighboursOf(u)) {
-//       const W alt = dist.at(u) + min_dist_between(graph, u, v);
-//       if (dist.find(v) == dist.end() || alt < dist.at(v)) {
-//         dist[v] = alt;
-//         prev[v] = u;
-//       }
-//     }
-//   }
-//
-//   return std::make_pair(dist, prev);
-// }
-//
-// template <typename G>
-// std::pair <std::unordered_map<typename G::value_type, typename G::weight_type>,
-//            std::unordered_map<typename G::value_type, typename G::value_type> >
-// dijkstra_shortest_path_v2(const G& graph, typename G::const_reference source)
-// {
-//   typedef typename G::value_type V;
-//   typedef typename G::weight_type W;
-//
-//   std::unordered_map<V, W> dist;
-//   std::unordered_map<V, V> prev;
-//
-//   dist[source] = V();
-//
-//   std::unordered_set<V> q;
-//   q.insert(source);
-//
-//   const std::vector<V>& s_n = graph.neighboursOf(source);
-//   std::copy(s_n.begin(), s_n.end(), std::inserter(q, q.end()));
-//
-//   while (!q.empty()) {
-//     const V& u = smallest_distance_to_graph<V, W>(q, dist);
-//     q.erase(u);
-//
-//     for (V v : graph.neighboursOf(u)) {
-//       const W alt = dist.at(u) + min_dist_between(graph, u, v);
-//       if (dist.find(v) == dist.end() || alt < dist.at(v)) {
-//         dist[v] = alt;
-//         prev[v] = u;
-//       }
-//
-//       if (dist.find(v) == dist.end())
-//         q.insert(v);
-//     }
-//   }
-//
-//   return std::make_pair(dist, prev);
-// }
-
-template <typename G>
-std::vector<typename G::value_type>
-dijkstra_shortest_path_to(const G& graph,
-                          typename G::const_reference source,
-                          typename G::const_reference dest)
+template <typename V, typename W>
+std::vector<V>
+dijkstra_shortest_path_to(const Graph<V>& graph,
+                             const V& source,
+                             const V& dest,
+                             std::function<W(V, V)> distanceCompute
+                            )
 {
-  typedef typename G::value_type V;
-  typedef typename G::weight_type W;
-
   std::unordered_map<V, W> dist; /// @todo into std::priority_queue<std::pair<V< W>>
   std::unordered_map<V, V> prev;
 
-  dist[source] = V();
+  dist.emplace(source, W());
 
   std::unordered_set<V> q;
   q.insert(source);
@@ -142,22 +65,30 @@ dijkstra_shortest_path_to(const G& graph,
   std::copy(s_n.begin(), s_n.end(), std::inserter(q, q.end()));
 
   while (!q.empty()) {
-    const V& u = smallest_distance_to_graph<V, W>(q, dist);
+    const V& u = closestNode<V, W>(q, dist);
     q.erase(u);
     if (u == dest)
       break;
 
     for (V v : graph.neighboursOf(u)) {
-      const W alt = dist.at(u) + min_dist_between(graph, u, v);
-      if (dist.find(v) == dist.end() || alt < dist.at(v)) {
-        dist[v] = alt;
-        prev[v] = u;
-      }
-
-      if (dist.find(v) == dist.end())
+      const bool newNode = dist.find(v) == dist.end();
+      const W d = distanceCompute(u, v);
+      if (newNode) {
+        dist.emplace(v, d);
+        prev.emplace(v, u);
         q.insert(v);
+      } else {
+        const W alt = dist.at(u) + d;
+        const bool betterRoute = alt < dist.at(v);
+        if (betterRoute) {
+          dist[v] = alt;
+          prev[v] = u;
+        }
+      }
     }
   }
 
   return pathFromPrevList(dest, prev);
 }
+
+#endif // GRAPH_ALGORITHMS_HPP

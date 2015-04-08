@@ -60,7 +60,7 @@ inline float dist(const float2& v1, const float2& v2) { return sqrt(pow((v2.x - 
 struct float3 {
 	float x, y, z;
 
-	inline float3() {}
+	inline float3() : x(0.0), y(0.0), z(0.0) {}
 	inline float3(float f) : x(f), y(f), z(f) {}
 	inline float3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
 	inline float3(const float2& v, float z_) : x(v.x), y(v.y), z(z_) {}
@@ -102,7 +102,7 @@ inline float dist(const float3& v1, const float3& v2) { return sqrt(pow((v2.x - 
 struct float4 {
 	float x, y, z, w;
 
-	inline float4() {}
+	inline float4() : x(0.0), y(0.0), z(0.0), w(0.0) {}
 	inline float4(float f) : x(f), y(f), z(f), w(f) {}
 	inline float4(float x_, float y_, float z_, float w_) : x(x_), y(y_), z(z_), w(w_) {}
 	inline float4(const float2& v, float z_, float w_) : x(v.x), y(v.y), z(z_), w(w_) {}
@@ -152,7 +152,7 @@ inline float3::float3(const struct float4& v) : x(v.x), y(v.y), z(v.z) { }
 struct float2x2 {
 	float2 s, t; // rows
 
-	inline float2x2() {}
+	inline float2x2() : s(), t() {}
 	inline float2x2(const float2& s_, const float2& t_) : s(s_), t(t_) {}
 	inline float2x2(float sx, float sy,
 	                float tx, float ty) : s(sx, sy), t(tx, ty) {}
@@ -178,7 +178,7 @@ inline float2x2 inverse(const float2x2& m)     { return float2x2(float2(m.t.y, -
 struct float3x3 {
 	float3 s, t, u; // rows
 
-	inline float3x3() {}
+	inline float3x3() : s(), t(), u() {}
 	inline float3x3(const float3& s_, const float3& t_, const float3& u_) : s(s_), t(t_), u(u_) {}
 	inline float3x3(float sx, float sy, float sz,
 	                float tx, float ty, float tz,
@@ -230,7 +230,7 @@ inline float3x3 inverse(const float3x3& m) {
 struct float4x4 {
 	float4 s, t, u, v; // rows
 
-	inline float4x4() {}
+	inline float4x4() : s(), t(), u(), v() {}
 	inline float4x4(const float4& s_, const float4& t_, const float4& u_, const float4& v_) : s(s_), t(t_), u(u_), v(v_) {}
 	inline float4x4(float sx, float sy, float sz, float sw,
 	                float tx, float ty, float tz, float tw,

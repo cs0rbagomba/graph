@@ -9,11 +9,9 @@ env:
   - BUILD_TYPE=Release
 
 install:
-  - cmake -Hprojects/CMake -BBuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-  - cd Build
+  - cmake .
   - make
-  - cd ..
 
 script:
-  - cd Build
+  - cd test
   - test_bin

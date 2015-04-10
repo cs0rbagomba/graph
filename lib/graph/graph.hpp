@@ -53,14 +53,6 @@ public:
   Graph<V>& operator=(Graph<V> o) { swap(o); return *this; }
   void swap(Graph& o) { std::swap(m_vertices, o.m_vertices); }
 
-  //  Capacity
-  bool empty() const  { return m_vertices.empty(); }
-  size_type numberOfVertices() const { return m_vertices.size(); }
-  size_type numberOfEdges() const;
-
-  // Modifiers
-  void clear() { m_vertices.clear(); }
-
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
   void modifyVertex(const_reference old_data, const_reference new_data);
@@ -69,14 +61,13 @@ public:
   void setEdges(const_reference source, const std::vector<value_type>& destinations);
   void removeEdge(const_reference source, const_reference destination);
 
-  // Lookup
-  bool contains(const_reference data) const { return m_vertices.find(data) != m_vertices.end(); }
   std::vector<value_type> vertices() const;
-  bool connected(const_reference source, const_reference destination) const;
-  std::vector<value_type> neighboursOf(const_reference data) const;
   std::vector<Edge> edges() const;
 
-  // iterator
+  void clear() { m_vertices.clear(); }
+  std::vector<value_type> neighboursOf(const_reference data) const;
+
+
   class vertex_iterator : public std::iterator<std::forward_iterator_tag,
                                                value_type,
                                                difference_type,
@@ -130,8 +121,30 @@ private:
   v_container m_vertices;
 };
 
+// Free functions
 
-// Graph
+template <typename V>
+bool empty(const Graph<V>& g) { return g.vertices().empty(); }
+
+template <typename V>
+typename Graph<V>::size_type numberOfVertices(const Graph<V>& g) { return  g.vertices().size(); }
+
+template <typename V>
+typename Graph<V>::size_type numberOfEdges(const Graph<V>& g) { return  g.edges().size(); }
+
+template <typename V>
+bool contains(const Graph<V>& g, typename Graph<V>::const_reference data) {
+  const auto v = g.vertices();
+  return std::find(v.begin(), v.end(), data) != v.end();
+}
+
+template <typename V>
+bool connected(const Graph<V>& g, typename Graph<V>::const_reference source, typename Graph<V>::const_reference destination) {
+  const auto n = g.neighboursOf(source);
+  return std::find(n.begin(), n.end(), destination) != n.end();
+}
+
+// Graph implementation
 
 template <typename V>
 inline Graph<V>::Graph(std::initializer_list<V> vertex_list)
@@ -146,17 +159,7 @@ inline Graph<V>::Graph(std::initializer_list<Edge> edge_list)
   : Graph<V>()
 {
   for (const Edge& e : edge_list )
-    addEdge(e.source, e.destination, e.weight);
-}
-
-template <typename V>
-inline typename Graph<V>::size_type Graph<V>::numberOfEdges() const
-{
-  int sum = 0;
-  for (const auto& v : m_vertices)
-    sum += v.second.size();
-
-  return sum;
+    addEdge(e.source, e.destination);
 }
 
 template <typename V>
@@ -250,13 +253,6 @@ inline std::vector<typename Graph<V>::value_type> Graph<V>::vertices() const
     retval.push_back(v.first);
 
   return retval;
-}
-
-template <typename V>
-inline bool Graph<V>::connected(const_reference source, const_reference destination) const
-{
-  std::vector<V> neightbours = neighboursOf(source);
-  return std::find(neightbours.begin(), neightbours.end(), destination) != neightbours.end();
 }
 
 template <typename V>

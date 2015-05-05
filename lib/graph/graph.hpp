@@ -7,9 +7,23 @@
 #include <algorithm>
 #include <utility>
 
-// not weighed, not directed
-// multiedges, self edges are not checked
-// V expected to be cheap to store aggregate
+/**
+  the graph is:
+  - not weighed
+  - not directed. There are 2 edges for each connection, both direction
+  - no multi/self edges
+
+  - V expected to be cheap to copy
+  - V should have operator== and be hashable (for the internal std::unordered_map):
+  ~~~{.cpp}
+    namespace std {
+      template <>
+      struct hash<A> {
+        std::size_t operator()(const A& a) const { return ...; }
+      };
+    }
+  ~~~
+*/
 
 template <typename V>
 class Graph {
@@ -210,6 +224,13 @@ inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new
 template <typename V>
 inline void Graph<V>::addEdge(const_reference source, const_reference destination)
 {
+  if (source == destination) // no self-edges
+    return;
+
+  auto n = neighboursOf(source); // no multiedges
+  if (std::find(n.begin(), n.end(), destination) != n.end())
+    return;
+
   addVertex(source);
   addVertex(destination);
 

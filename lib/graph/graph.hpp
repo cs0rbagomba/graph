@@ -179,9 +179,6 @@ inline Graph<V>::Graph(std::initializer_list<Edge> edge_list)
 template <typename V>
 inline void Graph<V>::addVertex(const_reference data)
 {
-  if (m_vertices.find(data) != m_vertices.end())
-    return;
-
   std::pair<V, edge_container> p(data, edge_container());
   m_vertices.insert(p);
 }

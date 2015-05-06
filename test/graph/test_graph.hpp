@@ -351,7 +351,7 @@ TEST_CASE( "Graph custom vertices", "[graph][data_structure]" ) {
 
 }
 
-TEST_CASE( "Graph adding/removing", "[graph][data_structure]" ) {
+TEST_CASE( "Graph adding/removing with more data", "[graph][data_structure]" ) {
 
   SECTION("Adding some edges") {
     Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
@@ -444,6 +444,48 @@ TEST_CASE( "Graph adding/removing", "[graph][data_structure]" ) {
     REQUIRE( connected(g, 4, 1) == true );
     REQUIRE( connected(g, 4, 2) == true );
     REQUIRE( connected(g, 4, 3) == true );
+  }
+
+  SECTION("Adding some edges, modifying 1 vertex") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    g.modifyVertex(1, 5);
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+    REQUIRE( contains(g, 1) == false );
+    REQUIRE( contains(g, 5) == true );
+
+    REQUIRE( connected(g, 1, 2) == false );
+    REQUIRE( connected(g, 1, 3) == false );
+    REQUIRE( connected(g, 1, 4) == false );
+    REQUIRE( connected(g, 2, 1) == false );
+    REQUIRE( connected(g, 2, 4) == true );
+    REQUIRE( connected(g, 3, 1) == false );
+    REQUIRE( connected(g, 3, 4) == true );
+    REQUIRE( connected(g, 4, 1) == false );
+    REQUIRE( connected(g, 4, 2) == true );
+    REQUIRE( connected(g, 4, 3) == true );
+
+    REQUIRE( connected(g, 5, 2) == true );
+    REQUIRE( connected(g, 5, 3) == true );
+    REQUIRE( connected(g, 5, 4) == true );
+    REQUIRE( connected(g, 2, 5) == true );
+    REQUIRE( connected(g, 3, 5) == true );
+    REQUIRE( connected(g, 4, 5) == true );
+  }
+
+  SECTION("Adding some edges, modifying 1 unexisting vertex") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    g.modifyVertex(5, 6);
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+    REQUIRE( contains(g, 5) == false );
+    REQUIRE( contains(g, 6) == false );
   }
 }
 

@@ -198,20 +198,18 @@ inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new
   if (old_data == new_data)
     return;
 
-  v_iterator it = m_vertices.find(old_data);
-  if (it == m_vertices.end())
-    return;
-
   std::vector<value_type> neighbours = neighboursOf(old_data);
   for (auto &v : neighbours) {
     std::vector<value_type>& n_v = nonConstNeighboursOf(v);
     typename std::vector<value_type>::iterator n_it = std::find(n_v.begin(), n_v.end(), old_data);
     *n_it = new_data;
   }
+  const auto number_of_removed_elements = m_vertices.erase(old_data);
 
-  m_vertices.erase(it);
-  std::pair<V, edge_container> p(new_data, neighbours);
-  m_vertices.insert(p);
+  if (number_of_removed_elements > 0) {
+    std::pair<V, edge_container> p(new_data, neighbours);
+    m_vertices.insert(p);
+  }
 }
 
 template <typename V>

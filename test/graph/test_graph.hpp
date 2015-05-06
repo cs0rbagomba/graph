@@ -351,6 +351,104 @@ TEST_CASE( "Graph custom vertices", "[graph][data_structure]" ) {
 
 }
 
+TEST_CASE( "Graph adding/removing", "[graph][data_structure]" ) {
+
+  SECTION("Adding some edges") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    REQUIRE( connected(g, 1, 2) == true );
+    REQUIRE( connected(g, 1, 3) == true );
+    REQUIRE( connected(g, 1, 4) == true );
+    REQUIRE( connected(g, 2, 1) == true );
+    REQUIRE( connected(g, 2, 4) == true );
+    REQUIRE( connected(g, 3, 1) == true );
+    REQUIRE( connected(g, 3, 4) == true );
+    REQUIRE( connected(g, 4, 1) == true );
+    REQUIRE( connected(g, 4, 2) == true );
+    REQUIRE( connected(g, 4, 3) == true );
+  }
+
+  SECTION("Adding some edges, removing 1 vertex") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    g.removeVertex(1);
+    REQUIRE( numberOfVertices(g) == 3 );
+    REQUIRE( numberOfEdges(g) == 2*2 );
+    REQUIRE( connected(g, 1, 2) == false );
+    REQUIRE( connected(g, 1, 3) == false );
+    REQUIRE( connected(g, 1, 4) == false );
+    REQUIRE( connected(g, 2, 1) == false );
+    REQUIRE( connected(g, 2, 4) == true );
+    REQUIRE( connected(g, 3, 1) == false );
+    REQUIRE( connected(g, 3, 4) == true );
+    REQUIRE( connected(g, 4, 1) == false );
+    REQUIRE( connected(g, 4, 2) == true );
+    REQUIRE( connected(g, 4, 3) == true );
+  }
+
+  SECTION("Adding some edges, removing 1 unexisting vertex") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    g.removeVertex(5);
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    REQUIRE( connected(g, 1, 2) == true );
+    REQUIRE( connected(g, 1, 3) == true );
+    REQUIRE( connected(g, 1, 4) == true );
+    REQUIRE( connected(g, 2, 1) == true );
+    REQUIRE( connected(g, 2, 4) == true );
+    REQUIRE( connected(g, 3, 1) == true );
+    REQUIRE( connected(g, 3, 4) == true );
+    REQUIRE( connected(g, 4, 1) == true );
+    REQUIRE( connected(g, 4, 2) == true );
+    REQUIRE( connected(g, 4, 3) == true );
+  }
+
+  SECTION("Adding some edges, removing 1 edge") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    g.removeEdge(2, 4);
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 4*2 );
+    REQUIRE( connected(g, 1, 2) == true );
+    REQUIRE( connected(g, 1, 3) == true );
+    REQUIRE( connected(g, 1, 4) == true );
+    REQUIRE( connected(g, 2, 1) == true );
+    REQUIRE( connected(g, 2, 4) == false );
+    REQUIRE( connected(g, 3, 1) == true );
+    REQUIRE( connected(g, 3, 4) == true );
+    REQUIRE( connected(g, 4, 1) == true );
+    REQUIRE( connected(g, 4, 2) == false );
+    REQUIRE( connected(g, 4, 3) == true );
+  }
+
+  SECTION("Adding some edges, removing 1 unexisting edge") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    g.removeEdge(3, 2);
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 5*2 );
+
+    REQUIRE( connected(g, 1, 2) == true );
+    REQUIRE( connected(g, 1, 3) == true );
+    REQUIRE( connected(g, 1, 4) == true );
+    REQUIRE( connected(g, 2, 1) == true );
+    REQUIRE( connected(g, 2, 4) == true );
+    REQUIRE( connected(g, 3, 1) == true );
+    REQUIRE( connected(g, 3, 4) == true );
+    REQUIRE( connected(g, 4, 1) == true );
+    REQUIRE( connected(g, 4, 2) == true );
+    REQUIRE( connected(g, 4, 3) == true );
+  }
+}
+
+
+
 struct float2 {
   float x, y;
 
@@ -379,51 +477,51 @@ int numberOfEdges(int N, int M) {
           + (N-2)*2*5 + (M-2)*2*5; // sides has 5
 }
 
-TEST_CASE( "Graph performance", "[graph][performance]" ) {
-
-  SECTION("Adding 1000x1000 vertices") {
-
-    const std::size_t N = 1000;
-    const std::size_t M = 1000;
-    Graph<float2> g;
-    for (std::size_t i = 0; i < N; ++i)
-      for (std::size_t j = 0; j < M; ++j)
-        g.addVertex(float2(i, j));
-
-    REQUIRE( numberOfVertices(g) == N*M );
-  }
-
-  SECTION("Adding 1000x1000 vertices and MANY edges") {
-
-    /** Creating a big (N rows and M columns) grid.
-     *  Every vertex is connexted to it's 8 neighbours.
-     *
-     *  +-+-+-+
-     *  |x+x+x|
-     *  +x+x+x+
-     *  |x+x+x|
-     *  +-+-+-+
-     */
-
-    const std::size_t N = 1000;
-    const std::size_t M = 1000;
-    Graph<float2> g;
-
-    // inside
-    for (std::size_t i = 1; i < N-1; ++i)
-      for (std::size_t j = 1; j < M-1; ++j) {
-        g.addEdge(float2(i, j), float2(i-1, j-1));
-        g.addEdge(float2(i, j), float2(i-1, j));
-        g.addEdge(float2(i, j), float2(i-1, j+1));
-        g.addEdge(float2(i, j), float2(i,   j-1));
-        g.addEdge(float2(i, j), float2(i,   j+1));
-        g.addEdge(float2(i, j), float2(i+1, j-1));
-        g.addEdge(float2(i, j), float2(i+1, j));
-        g.addEdge(float2(i, j), float2(i+1, j+1));
-      }
-
-    REQUIRE( numberOfVertices(g) == N*M );
-//     REQUIRE( numberOfEdges(g) == numberOfEdges(N, M)*2 );
-  }
-
-}
+// TEST_CASE( "Graph performance", "[graph][performance]" ) {
+//
+//   SECTION("Adding 1000x1000 vertices") {
+//
+//     const std::size_t N = 1000;
+//     const std::size_t M = 1000;
+//     Graph<float2> g;
+//     for (std::size_t i = 0; i < N; ++i)
+//       for (std::size_t j = 0; j < M; ++j)
+//         g.addVertex(float2(i, j));
+//
+//     REQUIRE( numberOfVertices(g) == N*M );
+//   }
+//
+//   SECTION("Adding 1000x1000 vertices and MANY edges") {
+//
+//     /** Creating a big (N rows and M columns) grid.
+//      *  Every vertex is connexted to it's 8 neighbours.
+//      *
+//      *  +-+-+-+
+//      *  |x+x+x|
+//      *  +x+x+x+
+//      *  |x+x+x|
+//      *  +-+-+-+
+//      */
+//
+//     const std::size_t N = 1000;
+//     const std::size_t M = 1000;
+//     Graph<float2> g;
+//
+//     // inside
+//     for (std::size_t i = 1; i < N-1; ++i)
+//       for (std::size_t j = 1; j < M-1; ++j) {
+//         g.addEdge(float2(i, j), float2(i-1, j-1));
+//         g.addEdge(float2(i, j), float2(i-1, j));
+//         g.addEdge(float2(i, j), float2(i-1, j+1));
+//         g.addEdge(float2(i, j), float2(i,   j-1));
+//         g.addEdge(float2(i, j), float2(i,   j+1));
+//         g.addEdge(float2(i, j), float2(i+1, j-1));
+//         g.addEdge(float2(i, j), float2(i+1, j));
+//         g.addEdge(float2(i, j), float2(i+1, j+1));
+//       }
+//
+//     REQUIRE( numberOfVertices(g) == N*M );
+// //     REQUIRE( numberOfEdges(g) == numberOfEdges(N, M)*2 );
+//   }
+//
+// }

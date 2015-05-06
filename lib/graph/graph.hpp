@@ -186,14 +186,10 @@ inline void Graph<V>::addVertex(const_reference data)
 template <typename V>
 inline void Graph<V>::removeVertex(const_reference data)
 {
-  v_iterator it = m_vertices.find(data);
-  if (it == m_vertices.end())
-    return;
-
-  for (auto &v : m_vertices)
-    eraseEdge(v.second, data);
-
-  m_vertices.erase(it);
+  const auto number_of_removed_elements = m_vertices.erase(data);
+  if (number_of_removed_elements > 0)
+    for (auto &v : m_vertices)
+      eraseEdge(v.second, data);
 }
 
 template <typename V>

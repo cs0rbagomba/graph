@@ -61,8 +61,11 @@ public:
 
   Graph() : m_vertices() {}
   Graph(const Graph<V>& o) : m_vertices(o.m_vertices) {}
+  Graph(Graph<V>&& o) : m_vertices(std::move(o.m_vertices)) {}
   Graph(std::initializer_list<V> vertex_list);
+  Graph(const std::vector<V>& vertex_list);
   Graph(std::initializer_list<Edge> edge_list);
+  Graph(const std::vector<Edge>& edge_list);
 
   Graph<V>& operator=(Graph<V> o) { swap(o); return *this; }
   void swap(Graph& o) { std::swap(m_vertices, o.m_vertices); }
@@ -164,7 +167,15 @@ template <typename V>
 inline Graph<V>::Graph(std::initializer_list<V> vertex_list)
   : Graph<V>()
 {
-  for(const V& v : vertex_list)
+  for(const auto& v : vertex_list)
+    addVertex(v);
+}
+
+template <typename V>
+inline Graph<V>::Graph(const std::vector<V>& vertex_list)
+  : Graph<V>()
+{
+  for(const auto& v : vertex_list)
     addVertex(v);
 }
 
@@ -172,7 +183,15 @@ template <typename V>
 inline Graph<V>::Graph(std::initializer_list<Edge> edge_list)
   : Graph<V>()
 {
-  for (const Edge& e : edge_list )
+  for (const auto& e : edge_list )
+    addEdge(e.source, e.destination);
+}
+
+template <typename V>
+inline Graph<V>::Graph(const std::vector<Edge>& edge_list)
+  : Graph<V>()
+{
+  for (const auto& e : edge_list )
     addEdge(e.source, e.destination);
 }
 
@@ -198,10 +217,10 @@ inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new
   if (old_data == new_data)
     return;
 
-  std::vector<value_type> neighbours = neighboursOf(old_data);
+  auto neighbours = neighboursOf(old_data);
   for (auto &v : neighbours) {
-    std::vector<value_type>& n_v = nonConstNeighboursOf(v);
-    typename std::vector<value_type>::iterator n_it = std::find(n_v.begin(), n_v.end(), old_data);
+    auto& n = nonConstNeighboursOf(v);
+    auto n_it = std::find(n.begin(), n.end(), old_data);
     *n_it = new_data;
   }
   const auto number_of_removed_elements = m_vertices.erase(old_data);
@@ -225,8 +244,8 @@ inline void Graph<V>::addEdge(const_reference source, const_reference destinatio
   addVertex(source);
   addVertex(destination);
 
-  v_iterator source_it = m_vertices.find(source);
-  v_iterator destination_it = m_vertices.find(destination);
+  auto source_it = m_vertices.find(source);
+  auto destination_it = m_vertices.find(destination);
 
   source_it->second.push_back(destination);
   destination_it->second.push_back(source);
@@ -236,7 +255,7 @@ template <typename V>
 inline void Graph<V>::setEdges(const_reference source, const std::vector<value_type>& destinations)
 {
   addVertex(source);
-  v_iterator source_it = m_vertices.find(source);
+  auto source_it = m_vertices.find(source);
 
   source_it->second.clear();
   source_it->second = destinations;
@@ -245,11 +264,11 @@ inline void Graph<V>::setEdges(const_reference source, const std::vector<value_t
 template <typename V>
 inline void Graph<V>::removeEdge(const_reference source, const_reference destination)
 {
-  v_iterator source_it = m_vertices.find(source);
+  auto source_it = m_vertices.find(source);
   if (source_it == m_vertices.end())
     return;
 
-  v_iterator destination_it = m_vertices.find(destination);
+  auto destination_it = m_vertices.find(destination);
   if (destination_it == m_vertices.end())
     return;
 
@@ -270,7 +289,7 @@ inline std::vector<typename Graph<V>::value_type> Graph<V>::vertices() const
 template <typename V>
 inline std::vector<V> Graph<V>::neighboursOf(const_reference data) const
 {
-  v_const_iterator vertex_it = m_vertices.find(data);
+  auto vertex_it = m_vertices.find(data);
   if (vertex_it == m_vertices.end())
     return std::vector<V>();
   else
@@ -280,7 +299,7 @@ inline std::vector<V> Graph<V>::neighboursOf(const_reference data) const
 template <typename V>
 inline std::vector<V>& Graph<V>::nonConstNeighboursOf(const_reference data)
 {
-  v_iterator vertex_it = m_vertices.find(data);
+  auto vertex_it = m_vertices.find(data);
   return vertex_it->second;
 }
 

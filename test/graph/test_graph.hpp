@@ -2,10 +2,6 @@
 
 #include "../catch.hpp"
 
-#include <algorithm>
-#include <iostream>
-#include <map>
-
 TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
 
   SECTION("Initial state") {
@@ -154,6 +150,15 @@ TEST_CASE( "Graph adding vertices", "[graph][data_structure]" ) {
     REQUIRE( contains(g, 2) == true );
   }
 
+  SECTION("Modify vertex to the same") {
+    Graph<int> g;
+    g.addVertex(1);
+    REQUIRE( contains(g, 1) == true );
+
+    g.modifyVertex(1, 1);
+    REQUIRE( contains(g, 1) == true );
+  }
+
   SECTION("get array of vertices") {
     Graph<int> g;
     g.addVertex(1);
@@ -215,6 +220,21 @@ TEST_CASE( "Graph adding edges", "[graph][data_structure]" ) {
     REQUIRE( numberOfEdges(g) == 0 );
   }
 
+  SECTION("Adding some edges, one edge mentioned from both directions") {
+    Graph<int> g = { {1, 2}, {2, 1} };
+    REQUIRE( numberOfVertices(g) == 2 );
+    REQUIRE( numberOfEdges(g) == 1*2 );
+  }
+
+  SECTION("Adding some edges, one edge mentioned from both directions v2") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4},
+                     {2, 1}, {2, 3}, {2, 4},
+                     {3, 1}, {3, 2}, {3, 4},
+                     {4, 1}, {4, 2}, {4, 3} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 4*3 );
+  }
+
   SECTION("Adding some edges then clear") {
     Graph<int> g = { {1, 2}, {1, 3}, {3, 4} };
     g.clear();
@@ -225,6 +245,20 @@ TEST_CASE( "Graph adding edges", "[graph][data_structure]" ) {
     Graph<int> g = { {1, 2}, {1, 3}, {3, 4} };
     REQUIRE( numberOfEdges(g) == 3*2 );
     g.removeEdge(1, 4);
+    REQUIRE( numberOfEdges(g) == 3*2 );
+  }
+
+  SECTION("Removing edge with unexisting source") {
+    Graph<int> g = { {1, 2}, {1, 3}, {3, 4} };
+    REQUIRE( numberOfEdges(g) == 3*2 );
+    g.removeEdge(5, 4);
+    REQUIRE( numberOfEdges(g) == 3*2 );
+  }
+
+  SECTION("Removing edge with unexisting destination") {
+    Graph<int> g = { {1, 2}, {1, 3}, {3, 4} };
+    REQUIRE( numberOfEdges(g) == 3*2 );
+    g.removeEdge(1, 5);
     REQUIRE( numberOfEdges(g) == 3*2 );
   }
 
@@ -489,81 +523,3 @@ TEST_CASE( "Graph adding/removing with more data", "[graph][data_structure]" ) {
   }
 }
 
-
-
-struct float2 {
-  float x, y;
-
-  inline float2() : x(0.0), y(0.0) {}
-  inline float2(float f1, float f2) : x(f1), y(f2) {}
-};
-
-inline bool operator ==(const float2& v1, const float2& v2) { return v1.x == v2.x && v1.y == v2.y; }
-
-namespace std {
-  template <>
-  struct hash<float2>
-  {
-    std::size_t operator()(const float2& f2) const
-    {
-      std::size_t h1 = std::hash<float>()(f2.x);
-      std::size_t h2 = std::hash<float>()(f2.y);
-      return h1 ^ (h2 << 1);
-    }
-  };
-}
-
-int numberOfEdges(int N, int M) {
-  return (N-2)*(M-2)*8             // inside vertices have 8
-          + 4*3                    // corners have 3
-          + (N-2)*2*5 + (M-2)*2*5; // sides has 5
-}
-
-// TEST_CASE( "Graph performance", "[graph][performance]" ) {
-//
-//   SECTION("Adding 1000x1000 vertices") {
-//
-//     const std::size_t N = 1000;
-//     const std::size_t M = 1000;
-//     Graph<float2> g;
-//     for (std::size_t i = 0; i < N; ++i)
-//       for (std::size_t j = 0; j < M; ++j)
-//         g.addVertex(float2(i, j));
-//
-//     REQUIRE( numberOfVertices(g) == N*M );
-//   }
-//
-//   SECTION("Adding 1000x1000 vertices and MANY edges") {
-//
-//     /** Creating a big (N rows and M columns) grid.
-//      *  Every vertex is connexted to it's 8 neighbours.
-//      *
-//      *  +-+-+-+
-//      *  |x+x+x|
-//      *  +x+x+x+
-//      *  |x+x+x|
-//      *  +-+-+-+
-//      */
-//
-//     const std::size_t N = 1000;
-//     const std::size_t M = 1000;
-//     Graph<float2> g;
-//
-//     // inside
-//     for (std::size_t i = 1; i < N-1; ++i)
-//       for (std::size_t j = 1; j < M-1; ++j) {
-//         g.addEdge(float2(i, j), float2(i-1, j-1));
-//         g.addEdge(float2(i, j), float2(i-1, j));
-//         g.addEdge(float2(i, j), float2(i-1, j+1));
-//         g.addEdge(float2(i, j), float2(i,   j-1));
-//         g.addEdge(float2(i, j), float2(i,   j+1));
-//         g.addEdge(float2(i, j), float2(i+1, j-1));
-//         g.addEdge(float2(i, j), float2(i+1, j));
-//         g.addEdge(float2(i, j), float2(i+1, j+1));
-//       }
-//
-//     REQUIRE( numberOfVertices(g) == N*M );
-// //     REQUIRE( numberOfEdges(g) == numberOfEdges(N, M)*2 );
-//   }
-//
-// }

@@ -32,6 +32,8 @@ std::vector<V> pathFromPrevList(const V& dest, std::unordered_map<V, V> prev)
   std::vector<V> retval;
 
   retval.push_back(dest);
+
+  /// @bug This can be an endless loop
   for (V it = dest; prev.find(it) != prev.end() ; /*it = prev.at(it)*/) {
     V v = prev.at(it);
     retval.push_back(v);
@@ -48,10 +50,9 @@ std::vector<V> pathFromPrevList(const V& dest, std::unordered_map<V, V> prev)
 template <typename V, typename W>
 std::vector<V>
 dijkstra_shortest_path_to(const Graph<V>& graph,
-                             const V& source,
-                             const V& dest,
-                             std::function<W(V, V)> distanceCompute
-                            )
+                          const V& source,
+                          const V& dest,
+                          std::function<W(V, V)> distanceCompute)
 {
   std::unordered_map<V, W> dist; /// @todo into std::priority_queue<std::pair<V< W>>
   std::unordered_map<V, V> prev;
@@ -71,14 +72,15 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
       break;
 
     for (V v : graph.neighboursOf(u)) {
-      const bool newNode = dist.find(v) == dist.end();
+
       const W d = distanceCompute(u, v);
+      const W alt = dist.at(u) + d;
+      const bool newNode = dist.find(v) == dist.end();
       if (newNode) {
-        dist.emplace(v, d);
+        dist.emplace(v, alt);
         prev.emplace(v, u);
         q.insert(v);
       } else {
-        const W alt = dist.at(u) + d;
         const bool betterRoute = alt < dist.at(v);
         if (betterRoute) {
           dist[v] = alt;

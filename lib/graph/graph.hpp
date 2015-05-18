@@ -1,5 +1,5 @@
-#ifndef GRAPHWD_HPP
-#define GRAPHWD_HPP
+#ifndef GRAPH_HPP
+#define GRAPH_HPP
 
 #include <unordered_map>
 #include <vector>
@@ -322,4 +322,4 @@ inline void Graph<V>::eraseEdge(edge_container& v, const_reference data) {
 }
 
 
-#endif // GRAPHWD_HPP
+#endif // GRAPH_HPP

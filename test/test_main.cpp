@@ -2,3 +2,4 @@
 #include "catch.hpp"
 
 #include "graph/test_graph.hpp"
+#include "graph/test_graph_algorithms.hpp"

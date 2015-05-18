@@ -2,6 +2,8 @@
 
 #include "../catch.hpp"
 
+#include "fixture.hpp"
+
 TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
 
   SECTION("Initial state") {
@@ -183,6 +185,16 @@ TEST_CASE( "Graph adding vertices", "[graph][data_structure]" ) {
       ++found[it];
     }
     REQUIRE( found.size() == 3 );
+  }
+
+  SECTION("neighboursOf") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4} };
+    REQUIRE( numberOfVertices(g) == 4 );
+    REQUIRE( numberOfEdges(g) == 4*3 );
+    const std::vector<int> n = g.neighboursOf(3);
+    REQUIRE( std::find(n.begin(), n.end(), 1) != n.end() );
+    REQUIRE( std::find(n.begin(), n.end(), 2) != n.end() );
+    REQUIRE( std::find(n.begin(), n.end(), 4) != n.end() );
   }
 }
 
@@ -520,6 +532,33 @@ TEST_CASE( "Graph adding/removing with more data", "[graph][data_structure]" ) {
     REQUIRE( numberOfEdges(g) == 5*2 );
     REQUIRE( contains(g, 5) == false );
     REQUIRE( contains(g, 6) == false );
+  }
+}
+
+
+TEST_CASE_METHOD(Fixture<float2>, "Graph performance", "[graph][data_structure][performance]" ) {
+
+  constexpr std::size_t number_of_rows = 100;
+  constexpr std::size_t number_of_columns = 100;
+  constexpr std::size_t number_of_vertices = number_of_rows * number_of_columns;
+  constexpr std::size_t number_of_edges = numberOfEdges(number_of_rows, number_of_columns);
+
+  Fixture<float2>::initOnce(number_of_rows, number_of_columns);
+
+
+  SECTION("Adding vertices") {
+    const std::vector<float2> vertices = Fixture<float2>::getVertices();
+    Graph<float2> g(vertices);
+    REQUIRE( numberOfVertices(g) == number_of_vertices );
+  }
+
+  SECTION("Adding edges") {
+    const std::vector<typename Graph<float2>::Edge> edges = Fixture<float2>::getEdges();
+    Graph<float2> g(edges);
+  }
+
+  SECTION("teardown") {
+    Fixture<float2>::tearDown();
   }
 }
 

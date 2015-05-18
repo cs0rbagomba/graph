@@ -21,7 +21,8 @@ inline V closestNode(const std::unordered_set<V>& q, const std::unordered_map<V,
   const typename std::unordered_set<V>::const_iterator smallest_it =
     std::min_element(q.begin(), q.end(),
       [&dist](const V& v1, const V& v2)
-      { return !(dist.find(v2) != dist.end() && ( (dist.find(v1) == dist.end()) || (dist.at(v1) > dist.at(v2)))); } );
+      { return !(  dist.find(v2) != dist.end() &&
+                   ((dist.find(v1) == dist.end()) || (dist.at(v1) > dist.at(v2)))  ); } );
 
   return *smallest_it;
 }
@@ -30,15 +31,14 @@ template <typename V>
 std::vector<V> pathFromPrevList(const V& dest, std::unordered_map<V, V> prev)
 {
   std::vector<V> retval;
+  if (prev.find(dest) == prev.end())
+    return retval;
 
-  retval.push_back(dest);
-
-  /// @bug This can be an endless loop
-  for (V it = dest; prev.find(it) != prev.end() ; /*it = prev.at(it)*/) {
-    V v = prev.at(it);
-    retval.push_back(v);
-    it = v;
+  V it = dest;
+  for (; prev.find(it) != prev.end() ; it = prev.at(it)) {
+    retval.push_back(it);
   }
+  retval.push_back(it);
 
   std::reverse(retval.begin(), retval.end());
   return retval;
@@ -61,7 +61,6 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
 
   std::unordered_set<V> q;
   q.insert(source);
-
   const std::vector<V>& s_n = graph.neighboursOf(source);
   std::copy(s_n.begin(), s_n.end(), std::inserter(q, q.end()));
 
@@ -72,20 +71,16 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
       break;
 
     for (V v : graph.neighboursOf(u)) {
-
       const W d = distanceCompute(u, v);
       const W alt = dist.at(u) + d;
-      const bool newNode = dist.find(v) == dist.end();
-      if (newNode) {
+
+      if (dist.find(v) == dist.end()) { // new node
         dist.emplace(v, alt);
         prev.emplace(v, u);
         q.insert(v);
-      } else {
-        const bool betterRoute = alt < dist.at(v);
-        if (betterRoute) {
-          dist[v] = alt;
-          prev[v] = u;
-        }
+      } else if (alt < dist.at(v)) { // better route
+        dist[v] = alt;
+        prev[v] = u;
       }
     }
   }

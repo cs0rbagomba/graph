@@ -32,6 +32,11 @@ namespace std {
   public:
     float operator()(float2 a, float2 b) { return dist(a, b); }
   };
+  class distanceOf2ints : public std::function<int(int, int)>
+  {
+  public:
+    float operator()(int a, int b) { return abs(a-b); }
+  };
 }
 
 constexpr std::size_t numberOfEdges(std::size_t number_of_rows, std::size_t number_of_columns) {

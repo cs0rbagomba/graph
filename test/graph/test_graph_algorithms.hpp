@@ -37,6 +37,45 @@ void printPath(std::size_t number_of_rows,
 
 TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
 
+  SECTION("distance") {
+      const float2 source(1, 2);
+      const float2 destination(12, 13);
+      const float euclidan_distance = sqrt(pow(source.x - destination.x, 2) + pow(source.y - destination.y, 2));
+      REQUIRE( std::distanceOf2float2s()(source, destination) == euclidan_distance );
+    }
+
+  SECTION("empty graph") {
+    Graph<int> g;
+    const int source(0);
+    const int destination(1);
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    REQUIRE( shortestPath.size() == 0 );
+  }
+
+  SECTION("nonexisting destination") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    const int source(1);
+    const int destination(10);
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    REQUIRE( shortestPath.size() == 0 );
+  }
+
+  SECTION("nonexisting source") {
+    Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
+    const int source(10);
+    const int destination(1);
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    REQUIRE( shortestPath.size() == 0 );
+  }
+
+  SECTION("not connected source and destination") {
+    Graph<int> g = { {1, 2}, {3, 4} };
+    const int source(1);
+    const int destination(4);
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    REQUIRE( shortestPath.size() == 0 );
+  }
+
   SECTION("Simple") {
     constexpr std::size_t number_of_rows = 3;
     constexpr std::size_t number_of_columns = 3;

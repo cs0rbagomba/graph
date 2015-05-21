@@ -38,6 +38,7 @@ private:
   void removeNode(Node* selectedNode);
   void insertEdge(Node* selectedNode, Node* nodeUnderMouse);
   void removeEdge(Node* selectedNode, Node* nodeUnderMouse);
+  void modifyRoute();
 
   Graph<float2>* m_graph;
   QPixmap* m_background;

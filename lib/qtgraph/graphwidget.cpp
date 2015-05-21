@@ -192,33 +192,39 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
       break;
     }
     case Qt::Key_Space: {
-      for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
-        (*it)->setIsRoute(false);
-
-      QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
-      if (selectedItems.isEmpty())
-        break;
-
-      QGraphicsItem* selectedItem = selectedItems.first();
-      Node* selectedNode = dynamic_cast<Node*>(selectedItem);
-
-      const QPoint global_p = QCursor::pos();
-      const QPoint widget_p = mapFromGlobal(global_p);
-      const QPointF scene_p = mapToScene(widget_p);
-
-      QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
-      Node* nodeUnderMouse = dynamic_cast<Node*>(item_under_mouse);
-
-      if (nodeUnderMouse != 0 && nodeUnderMouse != selectedNode) {
-        m_route = calculateShortestRoute(scene(), m_graph, selectedNode, nodeUnderMouse);
-        for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
-          (*it)->setIsRoute(true);
-      }
+      modifyRoute();
     }
     default:
         QGraphicsView::keyPressEvent(e);
     }
 }
+
+void GraphWidget::modifyRoute()
+{
+  for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
+    (*it)->setIsRoute(false);
+
+  QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
+  if (selectedItems.isEmpty())
+    break;
+
+  QGraphicsItem* selectedItem = selectedItems.first();
+  Node* selectedNode = dynamic_cast<Node*>(selectedItem);
+
+  const QPoint global_p = QCursor::pos();
+  const QPoint widget_p = mapFromGlobal(global_p);
+  const QPointF scene_p = mapToScene(widget_p);
+
+  QGraphicsItem* item_under_mouse = scene()->itemAt(scene_p);
+  Node* nodeUnderMouse = dynamic_cast<Node*>(item_under_mouse);
+
+  if (nodeUnderMouse != 0 && nodeUnderMouse != selectedNode) {
+    m_route = calculateShortestRoute(scene(), m_graph, selectedNode, nodeUnderMouse);
+    for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
+      (*it)->setIsRoute(true);
+  }
+}
+
 
 void GraphWidget::removeEdge(Node* selectedNode, Node* nodeUnderMouse)
 {

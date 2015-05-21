@@ -16,7 +16,7 @@ Node::Node(GraphWidget *graphWidget)
     setFlag(ItemIsSelectable);
     setAcceptHoverEvents(true);
     setCacheMode(DeviceCoordinateCache);
-    setZValue(1); // higher than the edge
+    setZValue(10); // higher than the edge
 }
 
 void Node::addEdge(Edge *edge)

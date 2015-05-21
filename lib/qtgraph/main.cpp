@@ -79,7 +79,9 @@ int main(int argc, char **argv)
   const std::string xml_file = "graph_example.xml";
   Graph<float2> g = readGraphFromXML<float2>(xml_file, float2creator);
 
-  GraphWidget *widget = new GraphWidget(&g);
+  const std::string png_file = "first_map.png";
+
+  GraphWidget *widget = new GraphWidget(&g, QString::fromStdString(png_file));
   widget->updateFromGraph();
 
   QMainWindow mainWindow;

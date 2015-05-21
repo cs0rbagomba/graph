@@ -14,6 +14,7 @@ Edge::Edge(Node* s, Node* d, Edge::ArrowStyle arrowStyle  )
     , m_isRoute(false)
 {
     setAcceptedMouseButtons(0);
+    setZValue(0);
     source = s;
     dest = d;
     source->addEdge(this);
@@ -74,10 +75,13 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
         return;
 
     // Draw the line itself
-    if (m_isRoute)
+    if (m_isRoute) {
       painter->setPen(QPen(Qt::red, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    else
+      setZValue(1);
+    } else {
       painter->setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+      setZValue(0);
+    }
 
     painter->drawLine(line);
 

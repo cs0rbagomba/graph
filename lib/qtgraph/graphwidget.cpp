@@ -10,6 +10,7 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QWheelEvent>
 #include <QtGui/QGraphicsScene>
+#include <QtGui/QPainter>
 
 #include <QtGui/QApplication>
 
@@ -57,10 +58,10 @@ QPointF inline QPointFFromfloat2(const float2& f)
   return QPointF(f.x, f.y);
 }
 
-inline float dist(const float2& v1, const float2& v2)
-{
-  return sqrt(pow((v2.x - v1.x),2) + pow((v2.y - v1.y),2));
-}
+// inline float dist(const float2& v1, const float2& v2)
+// {
+//   return sqrt(pow((v2.x - v1.x),2) + pow((v2.y - v1.y),2));
+// }
 
 QList<Edge*> calculateShortestRoute(const QGraphicsScene* scene,
                                        const Graph<float2>* graph,
@@ -94,22 +95,35 @@ QList<Edge*> calculateShortestRoute(const QGraphicsScene* scene,
 } // anonym namespace
 
 
-GraphWidget::GraphWidget(Graph<float2>* graph, QWidget *p)
+GraphWidget::GraphWidget(Graph<float2>* graph, const QString& png_file, QWidget *p)
     : QGraphicsView(p)
     , m_graph(graph)
+    , m_background(0)
 {
-    QGraphicsScene *s = new QGraphicsScene(this);
-    s->setItemIndexMethod(QGraphicsScene::NoIndex);
-    s->setSceneRect(-200, -200, 400, 400);
-    setScene(s);
+  m_background = new QPixmap(png_file);
+  if (m_background->isNull())
+    throw std::invalid_argument("Could not load image from png file.");
 
-    setCacheMode(CacheBackground);
-    setViewportUpdateMode(BoundingRectViewportUpdate);
-    setRenderHint(QPainter::Antialiasing);
-    setTransformationAnchor(AnchorUnderMouse);
-    scale(qreal(0.8), qreal(0.8));
-    setMinimumSize(400, 400);
-    setWindowTitle(tr("Elastic Nodes"));
+  const int h = m_background->height();
+  const int w = m_background->width();
+
+  QGraphicsScene *s = new QGraphicsScene(this);
+  s->setItemIndexMethod(QGraphicsScene::NoIndex);
+  s->setSceneRect(0, 0, w, h);
+  setScene(s);
+
+  setCacheMode(CacheBackground);
+  setViewportUpdateMode(BoundingRectViewportUpdate);
+  setRenderHint(QPainter::Antialiasing);
+  setTransformationAnchor(AnchorUnderMouse);
+  setMinimumSize(w, h);
+  setWindowTitle(tr("Graph"));
+}
+
+GraphWidget::~GraphWidget()
+{
+  if (m_background != 0)
+    delete m_background;
 }
 
 void GraphWidget::itemMoved(const QPointF oldPos, const QPointF newPos)
@@ -210,7 +224,7 @@ void GraphWidget::removeEdge(Node* selectedNode, Node* nodeUnderMouse)
 {
   const float2 source_pos = float2FromQPointF(selectedNode->pos());
   const float2 destination_pos = float2FromQPointF(nodeUnderMouse->pos());
-  if (!m_graph->connected(source_pos, destination_pos))
+  if (!connected(*m_graph, source_pos, destination_pos))
     return;
 
   m_graph->removeEdge(source_pos, destination_pos);
@@ -243,7 +257,7 @@ void GraphWidget::insertEdge(Node* selectedNode, Node* nodeUnderMouse)
 {
   const float2 source_pos = float2FromQPointF(selectedNode->pos());
   const float2 destination_pos = float2FromQPointF(nodeUnderMouse->pos());
-  if (m_graph->connected(source_pos, destination_pos))
+  if (connected(*m_graph, source_pos, destination_pos))
     return;
 
   scene()->addItem(new Edge(selectedNode, nodeUnderMouse));
@@ -271,24 +285,11 @@ void GraphWidget::wheelEvent(QWheelEvent *e)
     scaleView(pow((double)2, -e->delta() / 240.0));
 }
 
-void GraphWidget::drawBackground(QPainter *painter, const QRectF &r)
+void GraphWidget::drawBackground(QPainter* painter, const QRectF& /*r*/)
 {
-    // Shadow
-    QRectF scene_rect = this->sceneRect();
-    QRectF rightShadow(scene_rect.right(), scene_rect.top() + 5, 5, scene_rect.height());
-    QRectF bottomShadow(scene_rect.left() + 5, scene_rect.bottom(), scene_rect.width(), 5);
-    if (rightShadow.intersects(r) || rightShadow.contains(r))
-        painter->fillRect(rightShadow, Qt::darkGray);
-    if (bottomShadow.intersects(r) || bottomShadow.contains(r))
-        painter->fillRect(bottomShadow, Qt::darkGray);
-
-    // Fill
-    QLinearGradient gradient(scene_rect.topLeft(), scene_rect.bottomRight());
-    gradient.setColorAt(0, Qt::white);
-    gradient.setColorAt(1, Qt::lightGray);
-    painter->fillRect(r.intersect(scene_rect), gradient);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(scene_rect);
+  const int h = m_background->height();
+  const int w = m_background->width();
+  painter->drawPixmap(QRectF(0, 0, w, h), *m_background, QRectF(0, 0, w, h));
 }
 
 void GraphWidget::scaleView(qreal scaleFactor)

@@ -11,7 +11,8 @@ class QGraphicsSceneMouseEvent;
 class Node : public QGraphicsItem
 {
 public:
-  Node(GraphWidget *graphWidget);
+  Node(GraphWidget *graphWidget,
+        qreal radius = 4);
 
   void addEdge(Edge *edge);
   void removeEdge(Edge* edge);
@@ -33,6 +34,7 @@ protected:
 private:
   QList<Edge *> edgeList;
   GraphWidget *m_graphWidget;
+  qreal m_radius;
 };
 
 #endif

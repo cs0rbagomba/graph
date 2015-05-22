@@ -8,8 +8,9 @@
 #include <QtGui/QStyleOption>
 
 
-Node::Node(GraphWidget *graphWidget)
-    : m_graphWidget(graphWidget)
+Node::Node(GraphWidget *graphWidget, qreal radius)
+  : m_graphWidget(graphWidget)
+  , m_radius(radius)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -45,24 +46,23 @@ Edge* Node::edgeTo(const Node* n) const
   return 0;
 }
 
-
 QRectF Node::boundingRect() const
 {
     qreal adjust = 2;
-    return QRectF( -10 - adjust, -10 - adjust,
-                  23 + adjust, 23 + adjust);
+    return QRectF( -m_radius   - adjust, -m_radius    - adjust,
+                    m_radius*2 + adjust,  m_radius*2  + adjust);
 }
 
 QPainterPath Node::shape() const
 {
     QPainterPath path;
-    path.addEllipse(-10, -10, 20, 20);
+    path.addEllipse(-m_radius, -m_radius, m_radius*2, m_radius*2);
     return path;
 }
 
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget *)
 {
-    QRadialGradient gradient(-3, -3, 10);
+    QRadialGradient gradient(-3, -3, m_radius);
     if (isSelected()) {
       gradient.setCenter(3, 3);
       gradient.setFocalPoint(3, 3);
@@ -78,7 +78,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWid
 
     painter->setBrush(gradient);
     painter->setPen(QPen(Qt::black, 0));
-    painter->drawEllipse(-10, -10, 20, 20);
+    painter->drawEllipse(-m_radius, -m_radius, m_radius*2, m_radius*2);
 }
 
 QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)

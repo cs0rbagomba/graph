@@ -2,12 +2,9 @@
 
 #include "floats.hpp"
 
-// #include <errno.h> // for strerror needed by png++/error.hpp
-#include <string.h> // for strerror needed by png++/error.hpp
+// #include <cstring> // for strerror needed by png++/error.hpp
 
 #include <png++/png.hpp>
-// #include <iostream>
-#include <sstream>
 
 
 MarchingSquares::MarchingSquares()
@@ -116,20 +113,4 @@ MarchingSquares::RunMarchingSquares() {
   // build quadtree and combine lines (there are many, many small pieces around now, combine to longer lines)
 
   return lines;
-}
-
-std::string
-dumpLinesToHtml(const std::vector< std::pair< float2, float2 > >& lines, int w, int h)
-{
-  std::stringstream ss;
-
-  // dump to HTML/SVG
-  ss << "<!DOCTYPE html>" << std::endl;
-  ss << "<html><body><svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewbox=\"0 0 " << w << " " << h << "\">" << std::endl;
-  for (size_t i = 0; i < lines.size(); ++i) {
-    const std::pair<float2, float2>& l = lines[i];
-    ss << "\t<line x1=\"" << l.first.x << "\" y1=\"" << l.first.y << "\" x2=\"" << l.second.x << "\" y2=\"" << l.second.y << "\" stroke=\"black\" stroke-width=\"0.25\"/>" << std::endl;
-  }
-  ss << "</svg></body></html>" << std::endl;
-  return ss.str();
 }

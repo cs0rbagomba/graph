@@ -22,6 +22,4 @@ private:
   std::vector<CellType> cells_;
 };
 
-std::string dumpLinesToHtml(const std::vector< std::pair<float2, float2> >& lines, int w, int h);
-
 #endif // WORLD_WORLD_HPP

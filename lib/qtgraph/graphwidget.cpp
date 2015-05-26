@@ -5,7 +5,9 @@
 
 #include <graph/graph.hpp>
 #include <graph/graph_algorithms.hpp>
+
 #include "floats.hpp"
+#include "marching_squares.hpp"
 
 #include <QtGui/QKeyEvent>
 #include <QtGui/QWheelEvent>
@@ -15,6 +17,7 @@
 #include <QtGui/QApplication>
 
 #include <functional>
+#include <cassert>
 
 namespace std {
   template <>
@@ -85,8 +88,11 @@ QList<Edge*> calculateShortestRoute(const QGraphicsScene* scene,
     QGraphicsItem* source_item = scene->itemAt(QPointFFromfloat2(shortestPath[i]));
     QGraphicsItem* destination_item = scene->itemAt(QPointFFromfloat2(shortestPath[i+1]));
     Node* source_node = dynamic_cast<Node*>(source_item);
+    assert(source_node);
     Node* destination_node = dynamic_cast<Node*>(destination_item);
+    assert(destination_node);
     Edge* e = source_node->edgeTo(destination_node);
+    assert(e);
     route.append(e);
   }
   return route;
@@ -99,7 +105,13 @@ GraphWidget::GraphWidget(Graph<float2>* graph, const QString& png_file, QWidget 
     : QGraphicsView(p)
     , m_graph(graph)
     , m_background(0)
+    , m_lines()
+    , m_lines_are_visible(true)
 {
+  MarchingSquares ms;
+  ms.ReadImage(png_file.toStdString());
+  m_lines = ms.RunMarchingSquares();
+
   m_background = new QPixmap(png_file);
   if (m_background->isNull())
     throw std::invalid_argument("Could not load image from png file.");
@@ -193,6 +205,11 @@ void GraphWidget::keyPressEvent(QKeyEvent *e)
     }
     case Qt::Key_Space: {
       modifyRoute();
+      break;
+    }
+    case Qt::Key_L: {
+      showLines();
+      break;
     }
     default:
         QGraphicsView::keyPressEvent(e);
@@ -206,7 +223,7 @@ void GraphWidget::modifyRoute()
 
   QList <QGraphicsItem* > selectedItems = scene()->selectedItems();
   if (selectedItems.isEmpty())
-    break;
+    return;
 
   QGraphicsItem* selectedItem = selectedItems.first();
   Node* selectedNode = dynamic_cast<Node*>(selectedItem);
@@ -222,6 +239,53 @@ void GraphWidget::modifyRoute()
     m_route = calculateShortestRoute(scene(), m_graph, selectedNode, nodeUnderMouse);
     for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
       (*it)->setIsRoute(true);
+  }
+}
+
+void GraphWidget::showLines()
+{
+  m_lines_are_visible = !m_lines_are_visible;
+  if (m_lines_are_visible) {
+    resetGraph();
+    for (std::size_t i = 0; i < m_lines.size(); ++i) {
+       const std::pair<float2, float2> e = m_lines[i];
+       const float2 s = e.first;
+       Node* s_n = 0;
+       if (!contains(*m_graph, s)) {
+        s_n = new Node(this);
+        scene()->addItem(s_n);
+        s_n->setPos(s.x, s.y);
+       } else {
+        QGraphicsItem* gi = scene()->itemAt(QPointFFromfloat2(s));
+        s_n = dynamic_cast<Node*>(gi);
+       }
+       const float2 d = e.second;
+       Node* d_n = 0;
+       if (!contains(*m_graph, d)) {
+        d_n = new Node(this);
+        scene()->addItem(d_n);
+        d_n->setPos(d.x, d.y);
+       } else {
+        QGraphicsItem* gi = scene()->itemAt(QPointFFromfloat2(d));
+        d_n = dynamic_cast<Node*>(gi);
+       }
+       insertEdge(s_n, d_n);
+       m_graph->addEdge(s, d);
+    }
+  }
+}
+
+void GraphWidget::resetGraph()
+{
+  for (QList<Edge*>::iterator it = m_route.begin(); it != m_route.end(); ++it)
+    (*it)->setIsRoute(false);
+
+  m_route.clear();
+  m_graph->clear();
+  QList <QGraphicsItem* > all_items = scene()->items();
+  for (int i = 0; i < all_items.size(); ++i) {
+    scene()->removeItem(all_items.at(i));
+    delete all_items.at(i);
   }
 }
 

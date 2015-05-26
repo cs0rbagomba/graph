@@ -6,6 +6,10 @@ set (CXX_FLAGS "-Wall -Wextra -pedantic -Wshadow "
                "-ggdb "
                "--std=c++0x " )
 
+set ( CMAKE_CXX_COMPILER "/usr/bin/g++-4.9.2")
+# set ( CMAKE_CXX_COMPILER "distcc")
+
+
 add_definitions( ${CXX_FLAGS} )
 
 FIND_PACKAGE(Qt4 REQUIRED)
@@ -25,9 +29,10 @@ main.cpp
 edge.cpp
 node.cpp
 graphwidget.cpp
+marching_squares.cpp
 ${qtgraph_HEADERS_MOC} )
 
-target_link_libraries ( qtgraph ${QT_LIBRARIES} xml2 )
+target_link_libraries ( qtgraph ${QT_LIBRARIES} xml2 png)
 
 add_custom_target (clean2
 COMMAND

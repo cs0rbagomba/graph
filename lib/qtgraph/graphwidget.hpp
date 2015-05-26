@@ -7,7 +7,7 @@ class float2;
 template<class T> class Graph;
 class Node;
 class Edge;
-// class QPixmap;
+class QString;
 
 class GraphWidget : public QGraphicsView
 {
@@ -39,10 +39,14 @@ private:
   void insertEdge(Node* selectedNode, Node* nodeUnderMouse);
   void removeEdge(Node* selectedNode, Node* nodeUnderMouse);
   void modifyRoute();
+  void showLines();
+  void resetGraph();
 
   Graph<float2>* m_graph;
   QPixmap* m_background;
   QList<Edge*> m_route;
+  std::vector< std::pair<float2, float2> > m_lines;
+  bool m_lines_are_visible;
 };
 
 #endif

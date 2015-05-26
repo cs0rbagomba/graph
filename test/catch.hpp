@@ -11,6 +11,8 @@
 #ifndef TWOBLUECUBES_SINGLE_INCLUDE_CATCH_HPP_INCLUDED
 #define TWOBLUECUBES_SINGLE_INCLUDE_CATCH_HPP_INCLUDED
 
+#pragma GCC system_header
+
 #define TWOBLUECUBES_CATCH_HPP_INCLUDED
 
 // #included from: internal/catch_suppress_warnings.h

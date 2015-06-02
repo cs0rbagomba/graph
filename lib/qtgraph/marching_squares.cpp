@@ -30,8 +30,8 @@ void MarchingSquares::ReadImage(const std::string& filename)
       else                    c = DESTROYABLE; // everything else
 
       // mark borders as SOLID, such that the entities in the world cannot fall off
-      // if (x == 0 || x == width_ - 1 || y == 0 || y == height_ - 1)
-      //   c = SOLID;
+      if (x == 0 || x == width_ - 1 || y == 0 || y == height_ - 1)
+        c = SOLID;
 
       cells_.push_back(c);
     }

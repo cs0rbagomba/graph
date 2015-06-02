@@ -15,13 +15,14 @@ inline float sign(float f)                        { return (f == 0.0f) ? 0.0f : 
 // 2-dimensional vector -------------------------------------------------------
 
 struct float2 {
+        typedef float value_type;
 	float x, y;
 
 	inline float2() : x(0.0), y(0.0) {}
 	inline float2(float f) : x(f), y(f) {}
-	inline float2(float x_, float y_) : x(x_), y(y_) {}
-	       float2(const struct float3& v);
-	       float2(const struct float4& v);
+	constexpr inline float2(float x_, float y_) : x(x_), y(y_) {}
+        float2(const struct float3& v);
+	float2(const struct float4& v);
 
 	inline float2 operator +() const { return *this; }
 	inline float2 operator -() const { return float2(-x, -y); }

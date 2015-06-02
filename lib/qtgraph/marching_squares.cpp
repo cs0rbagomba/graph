@@ -2,10 +2,9 @@
 
 #include "floats.hpp"
 
-// #include <cstring> // for strerror needed by png++/error.hpp
+#include <cstring> // for strerror needed by png++/error.hpp
 
 #include <png++/png.hpp>
-
 
 MarchingSquares::MarchingSquares()
   : width_(0)
@@ -43,6 +42,19 @@ void MarchingSquares::ReadImage(const std::string& filename)
 std::vector< std::pair<float2, float2> >
 MarchingSquares::RunMarchingSquares() {
 
+  constexpr float2 points[8] = { // clockwise, starting in top-left corner
+        float2(-1,    -1   ), // TL 0
+        float2(-0.5f, -1   ), // T  1
+        float2(0,     -1   ), // TR 2
+        float2(0,     -0.5f), // R  3
+        float2(0,     0     ), // BR 4
+        float2(-0.5f, 0    ), // B  5
+        float2(-1,    0    ), // BL 6
+        float2(-1,    -0.5f)  // L  7
+      };
+
+  constexpr float2 center(0.5, 0.5);
+
   std::vector< std::pair<float2, float2> > lines;
   for (size_t y = 1; y < height_; ++y) {
     for (size_t x = 1; x < width_; ++x) {
@@ -56,16 +68,7 @@ MarchingSquares::RunMarchingSquares() {
                      | ((quad[2] == FREE) ? 0x0 : 0x4)
                      | ((quad[3] == FREE) ? 0x0 : 0x8);
 
-      const float2 points[8] = { // clockwise, starting in top-left corner
-        float2(x-1,    y-1   ), // TL 0
-        float2(x-0.5f, y-1   ), // T  1
-        float2(x,      y-1   ), // TR 2
-        float2(x,      y-0.5f), // R  3
-        float2(x,      y     ), // BR 4
-        float2(x-0.5f, y     ), // B  5
-        float2(x-1,    y     ), // BL 6
-        float2(x-1,    y-0.5f)  // L  7
-      };
+      const float2 point(x, y);
 
       // these are the marching squares cases
       int s = -1, e = -1;
@@ -99,13 +102,13 @@ MarchingSquares::RunMarchingSquares() {
       }
       else if ((s & 0xf) == s) {
         // assert: (e & 0xf) == e
-        lines.push_back(std::pair<float2, float2>(points[s], points[e]));
+        lines.push_back(std::pair<float2, float2>(points[s]+center+point, points[e]+center+point));
       }
       else {
         int s1 = s & 0xf, e1 = e & 0xf;
         int s2 = s >> 4,  e2 = e >> 4;
-        lines.push_back(std::pair<float2, float2>(points[s1], points[e1]));
-        lines.push_back(std::pair<float2, float2>(points[s2], points[e2]));
+        lines.push_back(std::pair<float2, float2>(points[s1]+center+point, points[e1]+center+point));
+        lines.push_back(std::pair<float2, float2>(points[s2]+center+point, points[e2]+center+point));
       }
     }
   }

@@ -7,9 +7,10 @@
 class float2;
 
 class MarchingSquares {
-  enum CellType { FREE, SOLID, DESTROYABLE };
 
 public:
+  enum CellType { FREE, SOLID, DESTROYABLE };
+
   MarchingSquares();
 
   void ReadImage(const std::string& filename);

@@ -39,12 +39,7 @@ namespace {
     constexpr int2 (int _x, int _y) : x(_x), y(_y) {}
     int2 (const int2& o) : x(o.x), y(o.y) {}
     void operator+=(const int2 o) { x += o.x; y += o.y; }
-
-//     void stepX() { ++x; }
-//     void stepY() { ++y; }
   };
-  int2 operator+(const int2& a, const int2& b) { return int2(a.x+b.x, a.y+b.y); }
-  float2 operator+(const float2& f, const int2& i) { return float2(f.x+i.x, f.y+i.y); }
 }
 
 MarchingSquares::MarchingSquares()
@@ -70,6 +65,7 @@ void MarchingSquares::ReadImage(const std::string& filename)
       else if (row[x] >= 240) c = FREE;        // white
       else                    c = DESTROYABLE; // everything else
 
+      /// @todo extend image?
       // mark borders as SOLID, such that the entities in the world cannot fall off
       if (x == 0 || x == width_ - 1 || y == 0 || y == height_ - 1)
         c = SOLID;
@@ -112,8 +108,8 @@ MarchingSquares::RunMarchingSquares() {
   std::vector< std::pair<float2, float2> > lines;
 
   int2 point(1, 1);
-  for (point.y = 1 ;point.y < height_; ++point.y) {
-    for (point.x = 1; point.x < width_; ++point.x) {
+  for (point.y = 1 ;point.y < (int)height_; ++point.y) {
+    for (point.x = 1; point.x < (int)width_; ++point.x) {
 
       const int mask = getMaskAt(point.x, point.y);
 
@@ -131,10 +127,10 @@ MarchingSquares::RunMarchingSquares() {
         continue;
 
       // vertical/horizontal lines start with an edge
-      assert(mask !=  3);
-      assert(mask != 12);
-      assert(mask !=  5);
-      assert(mask != 10);
+//       assert(mask !=  3);
+//       assert(mask != 12);
+//       assert(mask !=  5);
+//       assert(mask != 10);
 
       // cannot reach nonvisited bottomright corner
       /// @note you can. the last is not visited
@@ -185,7 +181,7 @@ void MarchingSquares::visitPoint(int x, int y, int mask, std::vector< bool >& vi
     while (true) {
       i += int2(1, 0);
       int next_mask = getMaskAt(i.x, i.y);
-      if (i.x < width_ && i.y < height_ &&
+      if (i.x < (int)width_ && i.y < (int)height_ &&
         ( (horizontal_top && next_mask == 0x3) ||
           (horizontal_bottom && next_mask == 0xc) ||
           (vertical_left && next_mask == 0x5) ||
@@ -203,7 +199,7 @@ void MarchingSquares::visitPoint(int x, int y, int mask, std::vector< bool >& vi
     while (true) {
       i += int2(0, 1);
       int next_mask = getMaskAt(i.x, i.y);
-      if (i.x < width_ && i.y < height_ &&
+      if (i.x < (int)width_ && i.y < (int)height_ &&
         ( (horizontal_top && next_mask == 0x3) ||
           (horizontal_bottom && next_mask == 0xc) ||
           (vertical_left && next_mask == 0x5) ||

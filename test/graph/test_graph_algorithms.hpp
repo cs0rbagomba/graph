@@ -99,12 +99,10 @@ TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
 
 }
 
-TEST_CASE_METHOD(Fixture<float2>, "Graph algorithms, big graph", "[graph][algorithm][dijkstra]" ) {
+TEST_CASE_METHOD(Fixture<float2>, "Graph algorithms, big graph", "[graph][algorithm][dijkstra][performance]" ) {
 
-  constexpr std::size_t number_of_rows = 100;
+  constexpr std::size_t number_of_rows = 300;
   constexpr std::size_t number_of_columns = number_of_rows;
-  constexpr std::size_t number_of_vertices = number_of_rows * number_of_columns;
-  constexpr std::size_t number_of_edges = numberOfEdges(number_of_rows, number_of_columns);
 
   Fixture<float2>::initOnce(number_of_rows, number_of_columns);
 

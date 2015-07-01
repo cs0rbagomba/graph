@@ -3,11 +3,16 @@
 
 #include <cmath>
 
-struct float2 {
-  float x, y;
+inline std::size_t hash_f(float f) { return std::hash<float>()(f); }
+inline std::size_t hash_2f(float f1, float f2) { return hash_f(f1) ^ (hash_f(f2) << 1); }
 
-  inline float2() : x(0.0), y(0.0) {}
-  inline float2(float f1, float f2) : x(f1), y(f2) {}
+struct float2 {
+  typedef float value_type;
+  value_type x, y;
+  std::size_t h;
+
+  constexpr float2() : x(0.0), y(0.0), h(0) {}
+  float2(value_type f1, value_type f2) : x(f1), y(f2), h(hash_2f(f1, f2)) {}
 };
 
 inline bool operator ==(const float2& v1, const float2& v2) { return v1.x == v2.x && v1.y == v2.y; }
@@ -15,16 +20,13 @@ inline float pow2(float f) { return f*f; }
 inline float dist(const float2& v1, const float2& v2) { return sqrt(pow2(v2.x - v1.x) + pow2(v2.y - v1.y)); }
 // inline float dist(const float2& v1, const float2& v2) { return abs(v2.x - v1.x) + abs(v2.y - v1.y); }
 
+
+
 namespace std {
   template <>
   struct hash<float2>
   {
-    std::size_t operator()(const float2& f2) const
-    {
-      std::size_t h1 = std::hash<float>()(f2.x);
-      std::size_t h2 = std::hash<float>()(f2.y);
-      return h1 ^ (h2 << 1);
-    }
+    std::size_t operator()(const float2& f2) const { return f2.h; }
   };
 
   class distanceOf2float2s : public std::function<float(float2, float2)>

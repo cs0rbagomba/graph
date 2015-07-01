@@ -555,6 +555,7 @@ TEST_CASE_METHOD(Fixture<float2>, "Graph performance", "[graph][data_structure][
   SECTION("Adding edges") {
     const std::vector<typename Graph<float2>::Edge> edges = Fixture<float2>::getEdges();
     Graph<float2> g(edges);
+    REQUIRE( numberOfEdges(g) == number_of_edges );
   }
 
   SECTION("teardown") {

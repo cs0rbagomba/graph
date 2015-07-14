@@ -16,6 +16,9 @@
 
 #include <QtGui/QApplication>
 
+#include <QtGui/QMainWindow>
+#include <QtGui/QStatusBar>
+
 #include <functional>
 #include <cassert>
 
@@ -39,17 +42,9 @@ namespace std {
       return dist(a, b);
     }
   };
-}
+} // namespace std
 
 namespace {
-
-// for the map
-// bool operator< (const float2& v1, const float2& v2)
-// {
-//   return length(v1) < length(v2);
-// }
-
-
 
 float2 inline float2FromQPointF(const QPointF& p)
 {
@@ -60,11 +55,6 @@ QPointF inline QPointFFromfloat2(const float2& f)
 {
   return QPointF(f.x, f.y);
 }
-
-// inline float dist(const float2& v1, const float2& v2)
-// {
-//   return sqrt(pow((v2.x - v1.x),2) + pow((v2.y - v1.y),2));
-// }
 
 QList<Edge*> calculateShortestRoute(const QGraphicsScene* scene,
                                        const Graph<float2>* graph,
@@ -270,7 +260,6 @@ void GraphWidget::showLines()
         d_n = dynamic_cast<Node*>(gi);
        }
        insertEdge(s_n, d_n);
-       m_graph->addEdge(s, d);
     }
   }
 }
@@ -370,6 +359,27 @@ void GraphWidget::scaleView(qreal scaleFactor)
 
     scale(scaleFactor, scaleFactor);
 }
+
+void GraphWidget::mouseMoveEvent(QMouseEvent* e)
+{
+  const QPoint global_p = QCursor::pos();
+  const QPoint widget_p = mapFromGlobal(global_p);
+  const QPointF scene_p = mapToScene(widget_p);
+
+  const QGraphicsItem* i = scene()->itemAt(scene_p);
+  const Node* n = dynamic_cast<const Node*>(i);
+
+  QString msg(QString("(x,y) coordinates: (%1,%2)").arg(e->x()).arg(e->y()));
+  if (n != 0)
+    msg += QString("(node) coordinates: (%1,%2)").arg(n->pos().x()).arg(n->pos().y());
+
+  QObject* p = parentWidget();
+  QMainWindow* w = dynamic_cast<QMainWindow*>(p);
+  w->statusBar()->showMessage(msg);
+
+  QGraphicsView::mouseMoveEvent(e);
+}
+
 
 void GraphWidget::zoomIn()
 {

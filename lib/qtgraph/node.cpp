@@ -48,9 +48,9 @@ Edge* Node::edgeTo(const Node* n) const
 
 QRectF Node::boundingRect() const
 {
-    qreal adjust = 2;
-    return QRectF( -m_radius   - adjust, -m_radius    - adjust,
-                    m_radius*2 + adjust,  m_radius*2  + adjust);
+  const qreal adjust = 0;
+  return QRectF( -m_radius   - adjust, -m_radius    - adjust,
+                  m_radius*2 + adjust,  m_radius*2  + adjust);
 }
 
 QPainterPath Node::shape() const
@@ -62,23 +62,16 @@ QPainterPath Node::shape() const
 
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget *)
 {
-    QRadialGradient gradient(-3, -3, m_radius);
     if (isSelected()) {
-      gradient.setCenter(3, 3);
-      gradient.setFocalPoint(3, 3);
-      gradient.setColorAt(0, Qt::red);
-      gradient.setColorAt(1, Qt::darkRed);
+      painter->setBrush(Qt::red);
     } else if (option->state & QStyle::State_MouseOver) {
-      gradient.setColorAt(0, Qt::green);
-      gradient.setColorAt(1, Qt::darkGreen);
+      painter->setBrush(Qt::green);
     } else {
-      gradient.setColorAt(0, Qt::yellow);
-      gradient.setColorAt(1, Qt::darkYellow);
+      painter->setBrush(Qt::yellow);
     }
 
-    painter->setBrush(gradient);
     painter->setPen(QPen(Qt::black, 0));
-    painter->drawEllipse(-m_radius, -m_radius, m_radius*2, m_radius*2);
+    painter->drawEllipse(QRectF( -m_radius, -m_radius, m_radius*2, m_radius*2));
 }
 
 QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)

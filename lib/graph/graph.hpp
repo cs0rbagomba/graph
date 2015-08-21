@@ -13,6 +13,9 @@
   - not directed. There are 2 edges for each connection, both direction
   - no multi/self edges
 
+  - Stored as an unordered map where the keys are vertices and values are arrays of edges.
+    The multimap is picked since neighboursOf is the most critical operation.
+
   - V expected to be cheap to copy
   - V should have operator== and be hashable (for the internal std::unordered_map):
   ~~~{.cpp}
@@ -24,6 +27,16 @@
     }
   ~~~
 */
+
+
+// from http://cpptruths.blogspot.de/2011/09/tale-of-noexcept-swap-for-user-defined.html
+template<typename... T>
+struct is_nothrow_swappable_all
+{
+  static std::tuple<T...> *t;
+  enum { value = noexcept(t->swap(*t)) };
+};
+
 
 template <typename V>
 class Graph {
@@ -48,11 +61,14 @@ private:
 public:
 
   struct Edge {
-    Edge() : source(), destination() {}
+    Edge() noexcept(std::is_default_constructible<value_type>::value) : source(), destination() {}
     Edge(const_reference s, const_reference d) : source(s), destination(d) {}
     Edge(const Edge& o) : source(o.source), destination(o.destination) {}
+    Edge(Edge&& o) noexcept(std::is_nothrow_copy_constructible<value_type>::value)
+      : source(std::move(o.source)), destination(std::move(o.destination)) {}
     Edge& operator=(Edge o) { swap(o); return *this; }
-    void swap(Edge& o) { std::swap(source, o.source); std::swap(destination, o.destination); }
+    void swap(Edge& o) noexcept(is_nothrow_swappable_all<V>::value)
+      { std::swap(source, o.source); std::swap(destination, o.destination); }
     bool operator==(const Edge& o) const { return source == o.source && destination == o.destination; }
 
     value_type source;
@@ -61,14 +77,15 @@ public:
 
   Graph() : m_vertices() {}
   Graph(const Graph<V>& o) : m_vertices(o.m_vertices) {}
-  Graph(Graph<V>&& o) : m_vertices(std::move(o.m_vertices)) {}
+  Graph(Graph<V>&& o) : m_vertices(std::move(o.m_vertices)) {} // unordered_map move ctor is noexcept indifferent
   Graph(std::initializer_list<V> vertex_list);
   Graph(const std::vector<V>& vertex_list);
   Graph(std::initializer_list<Edge> edge_list);
   Graph(const std::vector<Edge>& edge_list);
 
   Graph<V>& operator=(Graph<V> o) { swap(o); return *this; }
-  void swap(Graph& o) { std::swap(m_vertices, o.m_vertices); }
+  void swap(Graph& o)  noexcept(is_nothrow_swappable_all<v_container>::value)
+    { std::swap(m_vertices, o.m_vertices); }
 
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
@@ -81,8 +98,8 @@ public:
   std::vector<value_type> vertices() const;
   std::vector<Edge> edges() const;
 
-  void clear() { m_vertices.clear(); }
-  std::vector<value_type> neighboursOf(const_reference data) const;
+  void clear() noexcept { m_vertices.clear(); }
+  const std::vector<value_type>& neighboursOf(const_reference data) const;
 
 
   class vertex_iterator : public std::iterator<std::forward_iterator_tag,
@@ -123,12 +140,12 @@ public:
   typedef vertex_iterator iterator;
   typedef const vertex_iterator const_iterator;
 
-  iterator begin() { return iterator(m_vertices.begin()); }
-  iterator begin() const { return iterator(m_vertices.begin()); }
-  const_iterator cbegin() const { return const_iterator(m_vertices.begin()); }
-  iterator end() { return iterator(m_vertices.end()); }
-  iterator end() const { return iterator(m_vertices.end()); }
-  const_iterator cend() const { return const_iterator(m_vertices.end()); }
+  iterator begin() noexcept { return iterator(m_vertices.begin()); }
+  iterator begin() const noexcept { return iterator(m_vertices.begin()); }
+  const_iterator cbegin() const noexcept { return const_iterator(m_vertices.begin()); }
+  iterator end() noexcept { return iterator(m_vertices.end()); }
+  iterator end() const noexcept { return iterator(m_vertices.end()); }
+  const_iterator cend() const noexcept { return const_iterator(m_vertices.end()); }
 
 private:
 
@@ -287,11 +304,12 @@ inline std::vector<typename Graph<V>::value_type> Graph<V>::vertices() const
 }
 
 template <typename V>
-inline std::vector<V> Graph<V>::neighboursOf(const_reference data) const
+inline const std::vector<V>& Graph<V>::neighboursOf(const_reference data) const
 {
+  static std::vector<V> empty;
   auto vertex_it = m_vertices.find(data);
   if (vertex_it == m_vertices.end())
-    return std::vector<V>();
+    return empty;
   else
     return vertex_it->second;
 }

@@ -38,10 +38,15 @@ public:
   void pop() { m_map.erase(m_map.begin()); }
   void push(const Key& key, const T& value) { m_map.emplace(key, value); }
   void modifyKey(const T& value, const Key& diff) {
-    auto it = std::find_if(m_map.begin(), m_map.end(), [&value](const std::pair<const int, std::string> & p) { return p.second == value; } );
+    auto it = std::find_if(m_map.begin(), m_map.end(), [&value](const std::pair<const Key, T> & p) { return p.second == value; } );
     Key key = it->first; // take a copy
     m_map.erase(it);
     m_map.emplace(key + diff, value);
+  }
+
+  bool contains(const T& value) const {
+     auto it = std::find_if(m_map.begin(), m_map.end(), [&value](const std::pair<const Key, T> & p) { return p.second == value; } );
+     return it != m_map.end();
   }
 
 private:

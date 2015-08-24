@@ -11,8 +11,6 @@ TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == true );
     REQUIRE( numberOfVertices(g) == 0 );
     REQUIRE( numberOfEdges(g) == 0 );
-    REQUIRE( g.edges().size() == 0 );
-    REQUIRE( g.vertices().size() == 0 );
   }
 
   SECTION("Initializer list of vertices") {
@@ -20,8 +18,6 @@ TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == false );
     REQUIRE( numberOfVertices(g) == 3 );
     REQUIRE( numberOfEdges(g) == 0 );
-    REQUIRE( g.edges().size() == 0 );
-    REQUIRE( g.vertices().size() == 3 );
 
     REQUIRE( contains(g, 1) == true );
     REQUIRE( contains(g, 2) == true );
@@ -33,8 +29,6 @@ TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == false );
     REQUIRE( numberOfVertices(g) == 4 );
     REQUIRE( numberOfEdges(g) == 3*2 );
-    REQUIRE( g.edges().size() == 3*2 );
-    REQUIRE( g.vertices().size() == 4 );
 
     REQUIRE( contains(g, 1) == true );
     REQUIRE( contains(g, 2) == true );
@@ -48,8 +42,6 @@ TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
     REQUIRE( empty(g2) == false );
     REQUIRE( numberOfVertices(g2) == 4 );
     REQUIRE( numberOfEdges(g2) == 3*2 );
-    REQUIRE( g2.edges().size() == 3*2 );
-    REQUIRE( g2.vertices().size() == 4 );
 
     REQUIRE( contains(g2, 1) == true );
     REQUIRE( contains(g2, 2) == true );
@@ -65,8 +57,6 @@ TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
     REQUIRE( empty(g2) == false );
     REQUIRE( numberOfVertices(g2) == 4 );
     REQUIRE( numberOfEdges(g2) == 3*2 );
-    REQUIRE( g2.edges().size() == 3*2 );
-    REQUIRE( g2.vertices().size() == 4 );
 
     REQUIRE( contains(g2, 1) == true );
     REQUIRE( contains(g2, 2) == true );
@@ -83,8 +73,6 @@ TEST_CASE( "Graph adding vertices", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == false );
     REQUIRE( numberOfVertices(g) == 1 );
     REQUIRE( numberOfEdges(g) == 0 );
-    REQUIRE( g.edges().size() == 0 );
-    REQUIRE( g.vertices().size() == 1 );
   }
 
   SECTION("Removing the only element") {
@@ -94,8 +82,6 @@ TEST_CASE( "Graph adding vertices", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == true );
     REQUIRE( numberOfVertices(g) == 0 );
     REQUIRE( numberOfEdges(g) == 0 );
-    REQUIRE( g.edges().size() == 0 );
-    REQUIRE( g.vertices().size() == 0 );
   }
 
   SECTION("Adding some vertices, removing one by one") {
@@ -206,8 +192,6 @@ TEST_CASE( "Graph adding edges", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == false );
     REQUIRE( numberOfVertices(g) == 2 );
     REQUIRE( numberOfEdges(g) == 1*2 );
-    REQUIRE( g.edges().size() == 1*2 );
-    REQUIRE( g.vertices().size() == 2 );
   }
 
   SECTION("Removing the only edge") {
@@ -217,8 +201,6 @@ TEST_CASE( "Graph adding edges", "[graph][data_structure]" ) {
     REQUIRE( empty(g) == false );
     REQUIRE( numberOfVertices(g) == 2 );
     REQUIRE( numberOfEdges(g) == 0 );
-    REQUIRE( g.edges().size() == 0 );
-    REQUIRE( g.vertices().size() == 2 );
   }
 
   SECTION("Adding some edges, removing one by one") {
@@ -295,8 +277,8 @@ TEST_CASE( "Graph adding edges", "[graph][data_structure]" ) {
 
   SECTION("get array of edges") {
     Graph<int> g = { {1, 2}, {1, 3}, {3, 4} };
-    auto edges = g.edges();
-    REQUIRE( edges.size() == 3*2 );
+    auto e = edges(g);
+    REQUIRE( e.size() == 3*2 );
   }
 }
 

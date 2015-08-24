@@ -96,7 +96,6 @@ public:
   void removeEdge(const_reference source, const_reference destination);
 
   std::vector<value_type> vertices() const;
-  std::vector<Edge> edges() const;
 
   void clear() noexcept { m_vertices.clear(); }
   const std::vector<value_type>& neighboursOf(const_reference data) const;
@@ -158,25 +157,37 @@ private:
 // Free functions
 
 template <typename V>
-bool empty(const Graph<V>& g) { return g.vertices().empty(); }
+inline bool empty(const Graph<V>& g) noexcept { return g.vertices().empty(); }
 
 template <typename V>
-typename Graph<V>::size_type numberOfVertices(const Graph<V>& g) { return  g.vertices().size(); }
+inline typename Graph<V>::size_type numberOfVertices(const Graph<V>& g) noexcept { return  g.vertices().size(); }
 
 template <typename V>
-typename Graph<V>::size_type numberOfEdges(const Graph<V>& g) { return  g.edges().size(); }
+inline typename Graph<V>::size_type numberOfEdges(const Graph<V>& g) { return  edges(g).size(); }
 
 template <typename V>
-bool contains(const Graph<V>& g, typename Graph<V>::const_reference data) {
+inline bool contains(const Graph<V>& g, typename Graph<V>::const_reference data) {
   const auto v = g.vertices();
   return std::find(v.begin(), v.end(), data) != v.end();
 }
 
 template <typename V>
-bool connected(const Graph<V>& g, typename Graph<V>::const_reference source, typename Graph<V>::const_reference destination) {
+inline bool connected(const Graph<V>& g, typename Graph<V>::const_reference source, typename Graph<V>::const_reference destination) {
   const auto n = g.neighboursOf(source);
   return std::find(n.begin(), n.end(), destination) != n.end();
 }
+
+template <typename V>
+inline std::vector<typename Graph<V>::Edge> edges(const Graph<V>& g)
+{
+  std::vector<typename Graph<V>::Edge> retval;
+  for (const auto& v : g.vertices())
+    for (const auto& e : g.neighboursOf(v))
+      retval.push_back(typename Graph<V>::Edge(v, e));
+
+  return retval;
+}
+
 
 // Graph implementation
 
@@ -319,17 +330,6 @@ inline std::vector<V>& Graph<V>::nonConstNeighboursOf(const_reference data)
 {
   auto vertex_it = m_vertices.find(data);
   return vertex_it->second;
-}
-
-template <typename V>
-inline std::vector<typename Graph<V>::Edge> Graph<V>::edges() const
-{
-  std::vector<typename Graph<V>::Edge> retval;
-  for (const auto& v : m_vertices)
-    for (const auto& e : v.second)
-      retval.push_back(Graph<V>::Edge(v.first, e));
-
-  return retval;
 }
 
 template <typename V>

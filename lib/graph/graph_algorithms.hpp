@@ -54,15 +54,16 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
                           const V& dest,
                           std::function<W(V, V)> distanceCompute)
 {
-  std::unordered_map<V, W> dist; /// @todo into std::priority_queue<std::pair<V< W>>
+  std::unordered_map<V, W> dist;
   std::unordered_map<V, V> prev;
 
   dist.emplace(source, W());
-
   std::unordered_set<V> q;
-  q.insert(source);
-  const std::vector<V>& s_n = graph.neighboursOf(source);
-  std::copy(s_n.begin(), s_n.end(), std::inserter(q, q.end()));
+  for (const auto& v : graph.neighboursOf(source)) {
+    q.insert(v);
+    dist[v] = distanceCompute(source, v);
+    prev[v] = source;
+  }
 
   while (!q.empty()) {
     const V& u = closestNode<V, W>(q, dist);

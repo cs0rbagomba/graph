@@ -5,6 +5,8 @@
 
 #include "fixture.hpp"
 
+#include <iostream>
+
 void printPath(std::size_t number_of_rows,
                std::size_t number_of_columns,
                float2 source,
@@ -48,7 +50,7 @@ TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
     Graph<int> g;
     const int source(0);
     const int destination(1);
-    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to(g, source, destination, std::distanceOf2ints());
     REQUIRE( shortestPath.size() == 0 );
   }
 
@@ -56,7 +58,7 @@ TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
     Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
     const int source(1);
     const int destination(10);
-    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to(g, source, destination, std::distanceOf2ints());
     REQUIRE( shortestPath.size() == 0 );
   }
 
@@ -64,7 +66,7 @@ TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
     Graph<int> g = { {1, 2}, {1, 3}, {1, 4}, {2, 4}, {3, 4} };
     const int source(10);
     const int destination(1);
-    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to(g, source, destination, std::distanceOf2ints());
     REQUIRE( shortestPath.size() == 0 );
   }
 
@@ -72,7 +74,7 @@ TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
     Graph<int> g = { {1, 2}, {3, 4} };
     const int source(1);
     const int destination(4);
-    const std::vector<int> shortestPath = dijkstra_shortest_path_to<int, int>(g, source, destination, std::distanceOf2ints());
+    const std::vector<int> shortestPath = dijkstra_shortest_path_to(g, source, destination, std::distanceOf2ints());
     REQUIRE( shortestPath.size() == 0 );
   }
 
@@ -84,7 +86,7 @@ TEST_CASE("Graph algorithms, small", "[graph][algorithm][dijkstra]" ) {
 
     const float2 source(0, 0);
     const float2 destination(2, 2);
-    const std::vector<float2> shortestPath = dijkstra_shortest_path_to<float2, float>(g, source, destination, std::distanceOf2float2s());
+    const std::vector<float2> shortestPath = dijkstra_shortest_path_to(g, source, destination, std::distanceOf2float2s());
 
     const float euclidan_distance = sqrt(pow(source.x - destination.x, 2) + pow(source.y - destination.y, 2));
     REQUIRE( std::distanceOf2float2s()(source, destination) == euclidan_distance );
@@ -112,7 +114,7 @@ TEST_CASE_METHOD(Fixture<float2>, "Graph algorithms, big graph", "[graph][algori
 
     const float2 source(0, 0);
     const float2 destination(number_of_rows-1, number_of_columns-1);
-    const std::vector<float2> shortestPath = dijkstra_shortest_path_to<float2, float>(g, source, destination, std::distanceOf2float2s());
+    const std::vector<float2> shortestPath = dijkstra_shortest_path_to(g, source, destination, std::distanceOf2float2s());
 
     REQUIRE( shortestPath.size() == number_of_rows);
     for (std::size_t i = 0; i < number_of_rows; ++i)

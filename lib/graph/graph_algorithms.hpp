@@ -48,7 +48,6 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
   std::unordered_map<V, std::pair<W, V> > dist_prev;
 
   dist_prev.emplace(source, std::pair<W, V>(W(), V()));
-//   std::unordered_set<V> q;
   PriorityQueue<W, V> q;
   for (const auto& v : graph.neighboursOf(source)) {
     const W d = distanceCompute(source, v);
@@ -67,14 +66,14 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
       const W d = distanceCompute(u, v);
       const W alt = dist_prev.at(u).first + d;
 
-      if (dist_prev.find(v) == dist_prev.end()) { // new node
-        dist_prev.emplace(v, std::pair<W, V>(alt, u));
-//         q.insert(v);
+      auto& v_ref = dist_prev[v];
+      if (v_ref.first == W()) { // new node
+        v_ref = std::pair<W, V>(alt, u);
         q.push(alt, v);
       } else {
-        const W prev_d = dist_prev.at(v).first;
+        const W prev_d = v_ref.first;
         if (alt < prev_d) { // better route
-          dist_prev[v] = std::pair<W, V>(alt, u);
+          v_ref = std::pair<W, V>(alt, u);
           q.modifyKey(prev_d, v, alt);
         }
       }

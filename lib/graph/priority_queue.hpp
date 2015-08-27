@@ -28,25 +28,23 @@ public:
   PriorityQueue() : m_map() {}
 
   // capacity
-  size_t size() const { return m_map.size(); }
-  bool empty() const { return m_map.empty(); }
+  size_t size() const noexcept { return m_map.size(); }
+  bool empty() const noexcept { return m_map.empty(); }
 
   // lookup
-  std::pair<Key, T> top() const { return *m_map.begin(); }
+  std::pair<Key, T> top() const noexcept { return *m_map.begin(); }
 
   // modifiers
   void pop() { m_map.erase(m_map.begin()); }
   void push(const Key& key, const T& value) { m_map.emplace(key, value); }
-  void modifyKey(const Key& key, const T& value, const Key& new_key) {
-    auto it = std::find_if(m_map.begin(), m_map.end(), [&key, &value](const std::pair<const Key, T> & p) { return p.first == key && p.second == value; } );
+  bool modifyKey(const Key& key, const T& value, const Key& new_key) {
+    auto it = std::find_if(m_map.begin(), m_map.end(),
+                           [&key, &value](const std::pair<const Key, T> & p) { return p.first == key && p.second == value; } );
+    if (it == m_map.end()) return false;
     T v = it->second; // take a copy
     m_map.erase(it);
     m_map.emplace(new_key, v);
-  }
-
-  bool contains(const T& value) const {
-     auto it = std::find_if(m_map.begin(), m_map.end(), [&value](const std::pair<const Key, T> & p) { return p.second == value; } );
-     return it != m_map.end();
+    return true;
   }
 
 private:

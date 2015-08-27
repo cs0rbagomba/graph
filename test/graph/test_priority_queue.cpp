@@ -26,7 +26,6 @@ typedef std::pair<W, V> P;
 
     REQUIRE( pq.size() == 1 );
     REQUIRE( pq.empty() == false );
-    REQUIRE( pq.contains(f2) == true );
 
     P p = pq.top();
     REQUIRE( p.second == f2 );
@@ -48,9 +47,6 @@ typedef std::pair<W, V> P;
 
     REQUIRE( pq.size() == 3 );
     REQUIRE( pq.empty() == false );
-    REQUIRE( pq.contains(f2_1) == true );
-    REQUIRE( pq.contains(f2_2) == true );
-    REQUIRE( pq.contains(f2_3) == true );
 
     P p1 = pq.top();
     pq.pop();
@@ -83,8 +79,8 @@ typedef std::pair<W, V> P;
     pq.push(1.0f, f2_1);
     pq.push(2.0f, f2_2);
 
-    pq.modifyKey(f2_1, +3.0f);
-    pq.modifyKey(f2_3, -2.0f);
+    pq.modifyKey(1.0f, f2_1, 1.0f + 3.0f);
+    pq.modifyKey(3.0f, f2_3, 3.0f - 2.0f);
 
     P p1 = pq.top();
     pq.pop();

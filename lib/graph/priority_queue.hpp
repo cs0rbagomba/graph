@@ -37,11 +37,11 @@ public:
   // modifiers
   void pop() { m_map.erase(m_map.begin()); }
   void push(const Key& key, const T& value) { m_map.emplace(key, value); }
-  void modifyKey(const T& value, const Key& diff) {
-    auto it = std::find_if(m_map.begin(), m_map.end(), [&value](const std::pair<const Key, T> & p) { return p.second == value; } );
-    Key key = it->first; // take a copy
+  void modifyKey(const Key& key, const T& value, const Key& new_key) {
+    auto it = std::find_if(m_map.begin(), m_map.end(), [&key, &value](const std::pair<const Key, T> & p) { return p.first == key && p.second == value; } );
+    T v = it->second; // take a copy
     m_map.erase(it);
-    m_map.emplace(key + diff, value);
+    m_map.emplace(new_key, v);
   }
 
   bool contains(const T& value) const {
@@ -50,7 +50,7 @@ public:
   }
 
 private:
-  std::map<Key, T, Compare, Allocator> m_map;
+  std::multimap<Key, T, Compare, Allocator> m_map;
 };
 
 #endif // PRIORITY_QUEUE_HPP

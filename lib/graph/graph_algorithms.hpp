@@ -2,10 +2,11 @@
 #define GRAPH_ALGORITHMS_HPP
 
 #include "graph.hpp"
+#include "priority_queue.hpp"
 
 #include <vector>
 #include <unordered_map>
-#include <unordered_set>
+
 #include <queue>
 #include <set>
 
@@ -16,19 +17,6 @@
 
 
 namespace {
-
-template <typename V, typename W>
-inline V closestNode(const std::unordered_set<V>& q, const std::unordered_map<V, std::pair<W, V> >& dist_prev)
-{
-  const typename std::unordered_set<V>::const_iterator smallest_it =
-    std::min_element(q.begin(), q.end(),
-      [&dist_prev](const V& v1, const V& v2)
-      { const auto v1_it = dist_prev.find(v1);
-        const auto v2_it = dist_prev.find(v2);
-        return !(  v2_it != dist_prev.end() && ((v1_it == dist_prev.end()) || (v1_it->second.first > v2_it->second.first))  ); } );
-
-  return *smallest_it;
-}
 
 template <typename V, typename W>
 std::vector<V> pathFromPrevList(const V& dest, const std::unordered_map<V, std::pair<W, V> >& dist_prev)
@@ -60,15 +48,18 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
   std::unordered_map<V, std::pair<W, V> > dist_prev;
 
   dist_prev.emplace(source, std::pair<W, V>(W(), V()));
-  std::unordered_set<V> q;
+//   std::unordered_set<V> q;
+  PriorityQueue<W, V> q;
   for (const auto& v : graph.neighboursOf(source)) {
-    q.insert(v);
-    dist_prev.emplace(v, std::pair<W, V>(distanceCompute(source, v), source));
+    const W d = distanceCompute(source, v);
+    q.push(d, v);
+    dist_prev.emplace(v, std::pair<W, V>(d, source));
   }
 
   while (!q.empty()) {
-    const V& u = closestNode<V, W>(q, dist_prev);
-    q.erase(u);
+    const V u = q.top().second;
+    q.pop();
+
     if (u == dest)
       break;
 
@@ -78,9 +69,14 @@ dijkstra_shortest_path_to(const Graph<V>& graph,
 
       if (dist_prev.find(v) == dist_prev.end()) { // new node
         dist_prev.emplace(v, std::pair<W, V>(alt, u));
-        q.insert(v);
-      } else if (alt < dist_prev.at(v).first) { // better route
-        dist_prev[v] = std::pair<W, V>(alt, u);
+//         q.insert(v);
+        q.push(alt, v);
+      } else {
+        const W prev_d = dist_prev.at(v).first;
+        if (alt < prev_d) { // better route
+          dist_prev[v] = std::pair<W, V>(alt, u);
+          q.modifyKey(prev_d, v, alt);
+        }
       }
     }
   }

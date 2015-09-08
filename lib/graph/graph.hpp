@@ -61,14 +61,7 @@ private:
 public:
 
   struct Edge {
-    Edge() noexcept(std::is_default_constructible<value_type>::value) : source(), destination() {}
     Edge(const_reference s, const_reference d) : source(s), destination(d) {}
-    Edge(const Edge& o) : source(o.source), destination(o.destination) {}
-    Edge(Edge&& o) noexcept(std::is_nothrow_copy_constructible<value_type>::value)
-      : source(std::move(o.source)), destination(std::move(o.destination)) {}
-    Edge& operator=(Edge o) { swap(o); return *this; }
-    void swap(Edge& o) noexcept(is_nothrow_swappable_all<V>::value)
-      { std::swap(source, o.source); std::swap(destination, o.destination); }
     bool operator==(const Edge& o) const { return source == o.source && destination == o.destination; }
 
     value_type source;
@@ -76,16 +69,10 @@ public:
   };
 
   Graph() : m_vertices() {}
-  Graph(const Graph<V>& o) : m_vertices(o.m_vertices) {}
-  Graph(Graph<V>&& o) : m_vertices(std::move(o.m_vertices)) {} // unordered_map move ctor is noexcept indifferent
   Graph(std::initializer_list<V> vertex_list);
   Graph(const std::vector<V>& vertex_list);
   Graph(std::initializer_list<Edge> edge_list);
   Graph(const std::vector<Edge>& edge_list);
-
-  Graph<V>& operator=(Graph<V> o) { swap(o); return *this; }
-  void swap(Graph& o)  noexcept(is_nothrow_swappable_all<v_container>::value)
-    { std::swap(m_vertices, o.m_vertices); }
 
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
@@ -113,12 +100,6 @@ public:
     typedef vertex_iterator self_type;
     typedef vertex_iterator& reference_self_type;
     typedef const vertex_iterator& const_reference_self_type;
-
-    vertex_iterator() : m_it() {}
-    ~vertex_iterator() {}
-    vertex_iterator(const_reference_self_type o) : m_it(o.m_it) {}
-    reference_self_type operator=(self_type o) { swap(o); return *this; }
-    void swap(reference_self_type o) { std::swap(m_it, o.m_it); }
 
     const_reference operator*() { return m_it->first; }
     const_pointer operator->() { return &m_it->first; }

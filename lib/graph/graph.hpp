@@ -73,6 +73,7 @@ public:
   Graph(const std::vector<V>& vertex_list);
   Graph(std::initializer_list<Edge> edge_list);
   Graph(const std::vector<Edge>& edge_list);
+  bool operator==(const Graph& o) const { return m_vertices == o.m_vertices; }
 
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
@@ -167,6 +168,15 @@ inline std::vector<typename Graph<V>::Edge> edges(const Graph<V>& g)
       retval.push_back(typename Graph<V>::Edge(v, e));
 
   return retval;
+}
+
+template <typename V>
+inline Graph<V> disjointUnion(const Graph<V>& a, const Graph<V>& b) {
+  Graph<V> g(a);
+  for (const auto& e : edges(b))
+    g.addEdge(e.source, e.destination);
+
+  return g;
 }
 
 

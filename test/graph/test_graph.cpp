@@ -4,7 +4,38 @@
 
 #include "fixture.hpp"
 
+#include <map>
+#include <type_traits>
+
 TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
+
+  SECTION("rule of 3+2") {
+    REQUIRE ( std::is_default_constructible<Graph<int> >::value == true);
+    REQUIRE ( std::is_copy_constructible<Graph<int> >::value == true);
+    REQUIRE ( std::is_move_constructible<Graph<int> >::value == true);
+
+    Graph<int> g1 = { 1, 2, 3 };
+    Graph<int> g2 = { 4, 5, 6 };
+    Graph<int> g3(g1); // cctor
+    REQUIRE ( g3 == g1 );
+
+    // catch does not likes templates in REQUIRE
+    constexpr bool is_assignable = std::is_assignable<Graph<int>, Graph<int> >::value;
+    REQUIRE ( is_assignable == true);
+    REQUIRE ( std::is_copy_assignable<Graph<int> >::value == true);
+    REQUIRE ( std::is_move_assignable<Graph<int> >::value == true);
+
+    g3 = g2; // assign
+    REQUIRE ( g3 == g2 );
+
+    Graph<int> g4 = g1; // cctor
+    Graph<int> g5 = std::move(g1); // move ctor, g1 become invalid
+    REQUIRE ( g4 == g5 );
+
+    Graph<int> g6 = g2; // cctor
+    g1 = std::move(g2); // move assign
+    REQUIRE ( g1 == g6 );
+  }
 
   SECTION("Initial state") {
     Graph<int> g;

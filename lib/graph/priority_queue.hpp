@@ -9,10 +9,13 @@
  * The priority queue based Dijkstra (shortest path) algorith requires the
  * modifyKey functionality, which the std::priority_queue does not have.
  *
- * @note modifyKey is very ineffective, since std::map is not a
+ * @note modifyKey is not very efficient, since std::map is not a
  * bidirectional map, looking up an element based on value is linear.
  *
- * @todo replace std::map with a Fibonacci heap to improve performance.
+ * But not terribly that bad either: keylookup is fast thou the iteration
+ * over elements with same key is linear.
+ *
+ * @todo replace std::map with a Fibonacci or Buffer heap to improve performance.
  */
 
 template <

@@ -1,6 +1,8 @@
 #ifndef GRAPH_TEST_FIXTURE_HPP
 #define GRAPH_TEST_FIXTURE_HPP
 
+#include <graph/graph.hpp>
+
 #include <cmath>
 
 inline std::size_t hash_f(float f) { return std::hash<float>()(f); }
@@ -16,10 +18,9 @@ struct float2 {
 };
 
 inline bool operator ==(const float2& v1, const float2& v2) { return v1.x == v2.x && v1.y == v2.y; }
+inline bool operator !=(const float2& v1, const float2& v2) { return !(v1 == v2); }
 inline float pow2(float f) { return f*f; }
 inline float dist(const float2& v1, const float2& v2) { return sqrt(pow2(v2.x - v1.x) + pow2(v2.y - v1.y)); }
-// inline float dist(const float2& v1, const float2& v2) { return abs(v2.x - v1.x) + abs(v2.y - v1.y); }
-
 
 
 namespace std {

@@ -22,13 +22,14 @@ struct float2 {
 	inline float2(float f) : x(f), y(f) {}
 	constexpr inline float2(float x_, float y_) : x(x_), y(y_) {}
         float2(const struct float3& v);
-	float2(const struct float4& v);
+        float2(const struct float4& v);
 
 	inline float2 operator +() const { return *this; }
 	inline float2 operator -() const { return float2(-x, -y); }
 };
 
 inline bool operator ==(const float2& v1, const float2& v2) { return v1.x == v2.x && v1.y == v2.y; }
+inline bool operator !=(const float2& v1, const float2& v2) { return v1.x != v2.x || v1.y != v2.y; }
 
 inline float2 operator +(const float2& v1, const float2& v2) { return float2(v1.x + v2.x, v1.y + v2.y); }
 inline float2 operator -(const float2& v1, const float2& v2) { return float2(v1.x - v2.x, v1.y - v2.y); }

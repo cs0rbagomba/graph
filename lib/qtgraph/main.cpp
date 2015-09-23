@@ -76,10 +76,9 @@ int main(int argc, char **argv)
 {
   SafeQApplication app(argc, argv);
 
-  const std::string xml_file = "graph_example.xml";
-  Graph<float2> g = readGraphFromXML<float2>(xml_file, float2creator);
+  Graph<float2> g;
 
-  const std::string png_file = "first_map.png";
+  const std::string png_file = "test.png";
 
   GraphWidget *widget = new GraphWidget(&g, QString::fromStdString(png_file));
   widget->updateFromGraph();
@@ -95,6 +94,5 @@ int main(int argc, char **argv)
   mainWindow.show();
   const int app_retval = app.exec();
 
-  writeGraphToXML<float2>(g, xml_file, float2serializer);
   return app_retval;
 }

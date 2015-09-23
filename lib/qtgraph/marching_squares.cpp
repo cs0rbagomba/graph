@@ -40,6 +40,9 @@ namespace {
     int2 (const int2& o) : x(o.x), y(o.y) {}
     void operator+=(const int2 o) { x += o.x; y += o.y; }
   };
+
+#define ASSERT(x) \
+  if (!(x)) std::cerr << __FILE__ << ":" << __LINE__ << ":" << __PRETTY_FUNCTION__ << (x) << std::endl;
 }
 
 MarchingSquares::MarchingSquares()
@@ -67,8 +70,8 @@ void MarchingSquares::ReadImage(const std::string& filename)
 
       /// @todo extend image?
       // mark borders as SOLID, such that the entities in the world cannot fall off
-      if (x == 0 || x == width_ - 1 || y == 0 || y == height_ - 1)
-        c = SOLID;
+//       if (x == 0 || x == width_ - 1 || y == 0 || y == height_ - 1)
+//         c = SOLID;
 
       // mark white "hole" cells sorrounded by 4 black cells as black
       if (y > 1 && y < height_-1 && x > 1 && x < width_-1 &&
@@ -116,7 +119,7 @@ MarchingSquares::RunMarchingSquares() {
       Color::Modifier blue(Color::FG_BLUE);
       Color::Modifier def(Color::FG_DEFAULT);
       if (mask != 0)
-        std::cout << std::left << std::setw(3) << mask;
+       std::cout << std::left << std::setw(3) << mask;
       else
         std::cout << blue << mask << def << "  ";
 
@@ -125,17 +128,6 @@ MarchingSquares::RunMarchingSquares() {
 
       if (mask == 0x0 || mask == 0xf) // empty or full
         continue;
-
-      // vertical/horizontal lines start with an edge
-//       assert(mask !=  3);
-//       assert(mask != 12);
-//       assert(mask !=  5);
-//       assert(mask != 10);
-
-      // cannot reach nonvisited bottomright corner
-      /// @note you can. the last is not visited
-//       assert(mask != 1);
-//       assert(mask != 14);
 
       visitPoint(point.x, point.y, mask, visited, lines);
     }
@@ -172,11 +164,39 @@ void MarchingSquares::visitPoint(int x, int y, int mask, std::vector< bool >& vi
 
   if (!horizontal && !vertical)
     return;
-//   assert(horizontal || vertical);
 
-//   const bool start_2_lines = (mask == 0x7 || mask == 0x6 || mask == 0x8 || mask == 0x9);
+  if (mask == 0x8 || mask == 0xb) {
+    int2 i(x, y);
+    while ((getMaskAt(i.x, i.y+1) == 0xe || getMaskAt(i.x, i.y+1) == 0x6) &&
+           getMaskAt(i.x-1, i.y+1) == 0x8 /*&&
+           visited[(i.y)*width_ + i.x] == false*/) {
+      visited[(i.y+1)*width_ + i.x] = true;
+      visited[(i.y+1)*width_ + i.x-1] = true;
+      i += int2(-1, 1);
+    }
+    if (i.x != x || i.y != y) {
+      visited[(i.y-1)*width_ + i.x+1] = false;
+      lines.push_back(std::pair<float2, float2>(float2(x, y),  float2( i.x, i.y)));
+    }
+  }
+  if (mask == 1) {
+    int2 i(x, y);
+    while ((getMaskAt(i.x-1, i.y) == 0x6 || getMaskAt(i.x-1, i.y) == 0x7) &&
+           getMaskAt(i.x-1, i.y+1) == 0x1 /*&&
+           visited[(i.y)*width_ + i.x] == false*/) {
+      visited[i.y*width_ + i.x-1] = true;
+      visited[(i.y+1)*width_ + i.x-1] = true;
+      i += int2(-1, 1);
+    }
+    if (i.x != x || i.y != y) {
+      visited[(i.y-1)*width_ + i.x+1] = false;
+      lines.push_back(std::pair<float2, float2>(float2(x, y),  float2( i.x, i.y)));
+    }
+  }
 
   if (horizontal) {
+
+    // go left till possible
     int2 i(x, y);
     while (true) {
       i += int2(1, 0);
@@ -191,7 +211,10 @@ void MarchingSquares::visitPoint(int x, int y, int mask, std::vector< bool >& vi
       else
         break;
     }
-    lines.push_back(std::pair<float2, float2>(float2(x, y),  float2( i.x, i.y)));
+    if (i.x != x) {
+      visited[i.y*width_ + i.x] = false;
+      lines.push_back(std::pair<float2, float2>(float2(x, y),  float2( i.x, i.y)));
+    }
   }
 
   if (vertical) {
@@ -209,6 +232,9 @@ void MarchingSquares::visitPoint(int x, int y, int mask, std::vector< bool >& vi
       else
         break;
     }
-    lines.push_back(std::pair<float2, float2>(float2(x, y),  float2( i.x, i.y)));
+    if (i.y != y) {
+      visited[i.y*width_ + i.x] = false;
+      lines.push_back(std::pair<float2, float2>(float2(x, y),  float2( i.x, i.y)));
+    }
   }
 }

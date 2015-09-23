@@ -37,18 +37,22 @@ void Edge::adjust()
     if (!source || !dest)
         return;
 
-    QLineF line(mapFromItem(source, 0, 0), mapFromItem(dest, 0, 0));
-    qreal length = line.length();
+//     QLineF line(mapFromItem(source, 0, 0), mapFromItem(dest, 0, 0));
+//     qreal length = line.length();
+
+  QLineF line(source->pos(), dest->pos());
 
     prepareGeometryChange();
 
-    if (length > qreal(20.)) {
-        QPointF edgeOffset((line.dx() * 10) / length, (line.dy() * 10) / length);
-        sourcePoint = line.p1() + edgeOffset;
-        destPoint = line.p2() - edgeOffset;
-    } else {
-        sourcePoint = destPoint = line.p1();
-    }
+//     if (length > qreal(20.)) {
+//         QPointF edgeOffset((line.dx() * 10) / length, (line.dy() * 10) / length);
+//         sourcePoint = line.p1() + edgeOffset;
+//         destPoint = line.p2() - edgeOffset;
+//     } else {
+//         sourcePoint = destPoint = line.p1();
+//     }
+  sourcePoint = line.p1();
+  destPoint = line.p2();
 }
 
 QRectF Edge::boundingRect() const
@@ -74,12 +78,14 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     if (qFuzzyCompare(line.length(), qreal(0.)))
         return;
 
+    const qreal line_thickness = 0.1;
+
     // Draw the line itself
     if (m_isRoute) {
-      painter->setPen(QPen(Qt::red, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+      painter->setPen(QPen(Qt::red, line_thickness*2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
       setZValue(1);
     } else {
-      painter->setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+      painter->setPen(QPen(Qt::blue, line_thickness, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
       setZValue(0);
     }
 

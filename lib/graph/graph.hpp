@@ -121,6 +121,7 @@ private:
 
   std::vector<value_type>& nonConstNeighboursOf(const_reference data);
   static void eraseEdge(edge_container& v, const_reference data);
+  v_iterator addVertexAndReturnIterator(const_reference data);
 
   v_container m_vertices;
 };
@@ -206,7 +207,7 @@ inline Graph<V>::Graph(const std::vector<Edge>& edge_list)
 template <typename V>
 inline void Graph<V>::addVertex(const_reference data)
 {
-  m_vertices.emplace(data, edge_container());
+  addVertexAndReturnIterator(data);
 }
 
 template <typename V>
@@ -230,8 +231,8 @@ inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new
     auto n_it = std::find(n.begin(), n.end(), old_data);
     *n_it = new_data;
   }
-  const auto number_of_removed_elements = m_vertices.erase(old_data);
 
+  const auto number_of_removed_elements = m_vertices.erase(old_data);
   if (number_of_removed_elements > 0)
     m_vertices.emplace(new_data, neighbours);
 }
@@ -246,22 +247,16 @@ inline void Graph<V>::addEdge(const_reference source, const_reference destinatio
   if (std::find(n.begin(), n.end(), destination) != n.end())
     return;
 
-  addVertex(source);
-  addVertex(destination);
-
-  auto source_it = m_vertices.find(source);
-  auto destination_it = m_vertices.find(destination);
-
+  auto source_it = addVertexAndReturnIterator(source);
   source_it->second.push_back(destination);
+  auto destination_it = addVertexAndReturnIterator(destination);
   destination_it->second.push_back(source);
 }
 
 template <typename V>
 inline void Graph<V>::setEdges(const_reference source, const std::vector<value_type>& destinations)
 {
-  addVertex(source);
-  auto source_it = m_vertices.find(source);
-
+  auto source_it = addVertexAndReturnIterator(source);
   source_it->second.clear();
   source_it->second = destinations;
 }
@@ -316,5 +311,9 @@ inline void Graph<V>::eraseEdge(edge_container& v, const_reference data) {
           v.end());
 }
 
-
+template <typename V>
+inline typename Graph<V>::v_iterator Graph<V>::addVertexAndReturnIterator(const_reference data)
+{
+  return m_vertices.emplace(data, edge_container()).first;
+}
 #endif // GRAPH_HPP

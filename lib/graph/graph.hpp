@@ -165,7 +165,7 @@ inline std::vector<typename Graph<V>::Edge> edges(const Graph<V>& g)
   std::vector<typename Graph<V>::Edge> retval;
   for (const auto& v : g.vertices())
     for (const auto& e : g.neighboursOf(v))
-      retval.push_back(typename Graph<V>::Edge(v, e));
+      retval.emplace_back(typename Graph<V>::Edge(v, e));
 
   return retval;
 }
@@ -217,8 +217,7 @@ inline Graph<V>::Graph(const std::vector<Edge>& edge_list)
 template <typename V>
 inline void Graph<V>::addVertex(const_reference data)
 {
-  std::pair<V, edge_container> p(data, edge_container());
-  m_vertices.insert(p);
+  m_vertices.emplace(data, edge_container());
 }
 
 template <typename V>
@@ -244,10 +243,8 @@ inline void Graph<V>::modifyVertex(const_reference old_data, const_reference new
   }
   const auto number_of_removed_elements = m_vertices.erase(old_data);
 
-  if (number_of_removed_elements > 0) {
-    std::pair<V, edge_container> p(new_data, neighbours);
-    m_vertices.insert(p);
-  }
+  if (number_of_removed_elements > 0)
+    m_vertices.emplace(new_data, neighbours);
 }
 
 template <typename V>

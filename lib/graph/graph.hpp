@@ -27,17 +27,6 @@
     }
   ~~~
 */
-
-
-// from http://cpptruths.blogspot.de/2011/09/tale-of-noexcept-swap-for-user-defined.html
-template<typename... T>
-struct is_nothrow_swappable_all
-{
-  static std::tuple<T...> *t;
-  enum { value = noexcept(t->swap(*t)) };
-};
-
-
 template <typename V>
 class Graph {
 

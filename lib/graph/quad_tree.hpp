@@ -4,7 +4,7 @@
 #include <vector>
 #include <utility> // move
 #include <cassert>
-#include <cstdlib> // abs
+#include <cmath> // std::fabs
 
 // From wikipedia: http://en.wikipedia.org/wiki/Quadtree#Pseudo_code
 
@@ -32,31 +32,13 @@ struct AABB
     , m_halfDimension(halfDimension) {}
 
   bool containsPoint(const P& p) const {
-    return p.x >= m_center.x - m_halfDimension &&
-           p.x <= m_center.x + m_halfDimension &&
-           p.y >= m_center.y - m_halfDimension &&
-           p.y <= m_center.y + m_halfDimension;
-
-//     return (abs(p.x - m_center.x) <= m_halfDimension) &&
-//            (abs(p.y - m_center.y) <= m_halfDimension);
-
+    return (std::fabs(m_center.x - p.x) <= m_halfDimension) &&
+           (std::fabs(m_center.y - p.y) <= m_halfDimension);
   }
 
   bool intersectsAABB(const AABB& other) const {
-//     return containsPoint(P(other.m_center.x - other.m_halfDimension, other.m_center.y - other.m_halfDimension)) ||
-//            containsPoint(P(other.m_center.x - other.m_halfDimension, other.m_center.y + other.m_halfDimension)) ||
-//            containsPoint(P(other.m_center.x + other.m_halfDimension, other.m_center.y - other.m_halfDimension)) ||
-//            containsPoint(P(other.m_center.x + other.m_halfDimension, other.m_center.y + other.m_halfDimension));
-
-//       return (abs(m_center.x - other.m_center.x) <= m_halfDimension + other.m_halfDimension) &&
-//              (abs(m_center.y - other.m_center.y) <= m_halfDimension + other.m_halfDimension);
-
-//     return dist(m_center, other.m_center) < m_halfDimension + other.m_halfDimension;
-
-    return other.m_center.x + other.m_center.x >= m_center.x - m_halfDimension &&
-           other.m_center.x - other.m_center.x <= m_center.x + m_halfDimension &&
-           other.m_center.y + other.m_center.y >= m_center.y - m_halfDimension &&
-           other.m_center.y - other.m_center.y <= m_center.y + m_halfDimension;
+      return (std::fabs(m_center.x - other.m_center.x) <= m_halfDimension + other.m_halfDimension) &&
+             (std::fabs(m_center.y - other.m_center.y) <= m_halfDimension + other.m_halfDimension);
   }
 };
 

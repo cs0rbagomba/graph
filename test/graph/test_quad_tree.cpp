@@ -4,7 +4,85 @@
 
 #include "fixture.hpp"
 
+#include <iostream>
 
+TEST_CASE( "Quad tree, AABB", "[quad_tree][data_structure][AABB]" ) {
+
+  const float2 center(0, 0);
+  constexpr float halfDimension(10);
+  const AABB<float2> boundary(center, halfDimension);
+
+  SECTION("containsPoint in") {
+    REQUIRE ( boundary.containsPoint(center) == true );
+
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension, center.y)) == true );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension, center.y)) == true );
+    REQUIRE ( boundary.containsPoint(float2(center.x, center.y - halfDimension)) == true );
+    REQUIRE ( boundary.containsPoint(float2(center.x, center.y + halfDimension)) == true );
+
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension, center.y - halfDimension)) == true );
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension, center.y + halfDimension)) == true );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension, center.y - halfDimension)) == true );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension, center.y + halfDimension)) == true );
+  }
+
+  SECTION("containsPoint out") {
+    constexpr float halfDimension_1 = halfDimension + 1.0;
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension_1, center.y)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension_1, center.y)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x, center.y - halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x, center.y + halfDimension_1)) == false );
+
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension_1, center.y - halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension_1, center.y + halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension_1, center.y - halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension_1, center.y + halfDimension_1)) == false );
+  }
+
+  SECTION("containsPoint invalid") {
+
+    constexpr float halfDimension_1 = halfDimension + 1.0;
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension_1, center.y)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension_1, center.y)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x, center.y - halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x, center.y + halfDimension_1)) == false );
+
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension_1, center.y - halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x - halfDimension_1, center.y + halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension_1, center.y - halfDimension_1)) == false );
+    REQUIRE ( boundary.containsPoint(float2(center.x + halfDimension_1, center.y + halfDimension_1)) == false );
+  }
+
+  SECTION("intersectsAABB") {
+
+    constexpr float halfDimension_1 = halfDimension + 1.0;
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center, 1.0)) == true);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center, halfDimension)) == true);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center, halfDimension_1)) == true);
+
+    const float2 center2(center.x + halfDimension, center.y);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center2, 0.0)) == true);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center2, halfDimension)) == true);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center2, halfDimension_1)) == true);
+
+    const float2 center3(center.x + halfDimension * 2, center.y);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center3, 0.0)) == false);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center3, halfDimension)) == true);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center3, halfDimension_1)) == true);
+
+    const float2 center4(center.x + halfDimension_1 * 2, center.y);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center4, 0.0)) == false);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center4, halfDimension)) == false);
+    REQUIRE( boundary.intersectsAABB(AABB<float2>(center4, halfDimension_1)) == false);
+  }
+
+    SECTION("special") {
+
+      // std::fabs instead of std::abs, which would turn float->int
+      const AABB<float2> boundary2(float2(-3.75, -8.75), 1.25);
+      REQUIRE( boundary2.containsPoint(float2(-2, -8)) == false);
+    }
+}
 
 TEST_CASE( "Quad tree", "[quad_tree][data_structure]" ) {
 
@@ -82,10 +160,10 @@ TEST_CASE( "Quad tree", "[quad_tree][data_structure]" ) {
     const float2 topLeft(-halfDimension, -halfDimension);
     const std::vector<float2> points =  t.queryRange(AABB<float2>(topLeft, halfDimension/2));
 
-    REQUIRE ( points.size() == 25);
-    for (int c = -halfDimension; c < halfDimension/2; ++c)
-      for (int r = -halfDimension; r < halfDimension/2; ++r)
-        REQUIRE ( std::find(points.begin(), points.end(), float2(r, c)) != points.end() );
+    REQUIRE ( points.size() == 36);
+    for (int c = -halfDimension; c < -halfDimension/2; ++c)
+      for (int r = -halfDimension; r < -halfDimension/2; ++r)
+        REQUIRE ( std::find(points.begin(), points.end(), float2(center.x + r, center.y + c)) != points.end() );
   }
 
   SECTION("Query many points inside") {
@@ -93,13 +171,11 @@ TEST_CASE( "Quad tree", "[quad_tree][data_structure]" ) {
       for (int r = -halfDimension; r < halfDimension; ++r)
         REQUIRE ( t.insert(float2(center.x + r, center.y + c)) == true );
 
-    const float2 right(0, halfDimension/2);
+    const float2 right(halfDimension/2, 0);
     const std::vector<float2> points =  t.queryRange(AABB<float2>(right, halfDimension/4));
 
-    REQUIRE ( points.size() == 25);
-    const float2 range_topleft(halfDimension/4, -halfDimension/4);
-    for (int c = 0; c < halfDimension/2; ++c)
-      for (int r = 0; r < halfDimension/2; ++r)
-        REQUIRE ( std::find(points.begin(), points.end(), float2(range_topleft.x + r, range_topleft.y + c)) != points.end() );
+    for (int c = -halfDimension/4; c < halfDimension/4; ++c)
+      for (int r = std::ceil(halfDimension/4); r < halfDimension*0.75; ++r)
+        REQUIRE ( std::find(points.begin(), points.end(), float2(center.x + r, center.y + c)) != points.end() );
   }
 }

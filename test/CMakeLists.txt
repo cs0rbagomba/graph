@@ -7,6 +7,7 @@ graph/test_graph.cpp
 graph/test_priority_queue.cpp
 graph/test_quad_tree.cpp
 graph/test_graph_algorithms.cpp
+graph/test_marching_squares.cpp
 
 test_main.cpp)
 

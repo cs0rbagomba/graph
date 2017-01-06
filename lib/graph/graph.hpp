@@ -62,7 +62,8 @@ public:
   Graph(const std::vector<V>& vertex_list);
   Graph(std::initializer_list<Edge> edge_list);
   Graph(const std::vector<Edge>& edge_list);
-  bool operator==(const Graph& o) const { return m_vertices == o.m_vertices; }
+  bool operator==(const Graph& o) const;
+  bool operator!=(const Graph& o) const { return !(*this == o); }
 
   void addVertex(const_reference data);
   void removeVertex(const_reference data);
@@ -203,6 +204,30 @@ inline Graph<V>::Graph(const std::vector<Edge>& edge_list)
   for (const auto& e : edge_list )
     addEdge(e.source, e.destination);
 }
+
+template <typename V>
+inline bool Graph<V>::operator==(const Graph& o) const
+{
+  if (numberOfVertices(*this) != numberOfVertices(o))
+    return false;
+
+  for (const auto& v : m_vertices) {
+    const auto& o_v(o.neighboursOf(v.first));
+    if (v.second.size() != o_v.size())
+      return false;
+
+    // compare 2 unordered vectors of unique elements...very costy
+    /// @note should vector be replaced with set?
+    auto v_copy(v.second);
+    auto o_v_copy(o_v);
+    sort(v_copy.begin(), v_copy.end());
+    sort(o_v_copy.begin(), o_v_copy.end());
+    if (v_copy != o_v_copy)
+      return false;
+  }
+  return true;
+}
+
 
 template <typename V>
 inline void Graph<V>::addVertex(const_reference data)

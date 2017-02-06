@@ -5,12 +5,13 @@ compiler:
   - gcc
 
 env:
-  - BUILD_TYPE=Debug
-  - BUILD_TYPE=Release
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "dG3gXqI65d45f7S6KrlqCgFun0id9Tw5tYOSud9lEYVvri6Qh6nJXEiqqVAsaZhZ7I/0cLMCQNmof3voFmOXpU+3NgQ3+t/vpe6PW65phR5O7hQl05YMApyP5ipq+KozLUL6ZAgX7eaU95rI/iPGYMfcZ2W3Jl7szGpxaZZOKrM="
+   - BUILD_TYPE=Debug
+   - BUILD_TYPE=Release
+ 
 
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y

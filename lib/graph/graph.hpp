@@ -10,11 +10,12 @@
 /**
   the graph is:
   - not weighed
-  - not directed. There are 2 edges for each connection, both direction
+  - not directed. There are 2 edges added for each connection, both direction
   - no multi/self edges
 
-  - Stored as an unordered map where the keys are vertices and values are arrays of edges.
-    The multimap is picked since neighboursOf is the most critical operation.
+  - Stored as an \ref std::unordered_map map where the keys are vertices and values are \ref std::vector of edges.
+    The multimap is picked since \ref neighboursOf is the most critical operation.
+    @note maybe \ref std::set is a better option for the edges?
 
   - V expected to be cheap to copy
   - V should have operator== and be hashable (for the internal std::unordered_map):

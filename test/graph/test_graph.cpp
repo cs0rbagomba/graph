@@ -96,6 +96,21 @@ TEST_CASE( "Graph creation", "[graph][data_structure]" ) {
   }
 }
 
+TEST_CASE( "Graph equality", "[graph][data_structure]" ) {
+
+  SECTION("Simple comparisions") {
+    Graph<int> g;
+    Graph<int> g1 = { {1, 2}, {1, 3}, {3, 4} };
+    Graph<int> g2 = { {1, 3}, {3, 4}, {1, 2} }; // shuffled g1
+    Graph<int> g3 = { {3, 1}, {4, 3}, {1, 2} }; // shuffled g1 with switched src,dst
+    REQUIRE( g == g );
+    REQUIRE( g != g1 );
+    REQUIRE( g1 == g2 );
+    REQUIRE( g1 == g3 );
+  }
+
+}
+
 TEST_CASE( "Graph adding vertices", "[graph][data_structure]" ) {
 
   SECTION("One element") {
